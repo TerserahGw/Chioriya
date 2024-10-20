@@ -1,0 +1,33 @@
+## Cara Mendapatkan Cookies
+
+1. **Pasang Ekstensi EditThisCookie**:
+   - Instal ekstensi **EditThisCookie** di peramban (browser) Anda.
+
+2. **Buka YouTube**:
+   - Kunjungi situs **YouTube** di peramban Anda.
+
+3. **Masuk ke Akun Anda**:
+   - **Masuk** ke akun YouTube Anda. Disarankan untuk menggunakan akun baru khusus untuk keperluan ini.
+
+4. **Ekspor Cookies**:
+   - Setelah masuk, klik ikon ekstensi **EditThisCookie**.
+   - Kemudian, klik ikon **Export** untuk menyalin cookies Anda ke clipboard.
+
+5. **Tempel Cookies ke Kode Anda**:
+   - Tempelkan cookies yang telah disalin ke dalam kode Anda pada bagian yang sesuai.
+
+### Peringatan
+
+- **Jangan Logout Menggunakan Tombol Logout**:
+  - Jangan keluar dari akun dengan mengklik tombol logout di YouTube atau manajer akun Google, karena hal ini akan menyebabkan cookies Anda kadaluarsa.
+  - Sebagai gantinya, Anda bisa menghapus cookies browser untuk keluar dari akun, atau menggunakan mode penyamaran (incognito mode) saat mendapatkan cookies, lalu tutup jendela penyamaran setelahnya.
+
+- **Pentingnya Cookies**:
+  - Tempelkan seluruh array cookies dari clipboard ke dalam fungsi `createAgent`. Jangan menghapus atau mengedit cookies apapun kecuali Anda benar-benar tahu apa yang Anda lakukan.
+
+- **Penggunaan Akun pada Satu IP**:
+  - Pastikan akun yang digunakan saat mendapatkan cookies hanya digunakan di **satu IP** pada satu waktu. Hal ini akan membuat cookies Anda bertahan lebih lama.
+
+---
+### Info: Informasi Lebih Lanjut Cek https://github.com/distubejs/ytdl-core
+### Note: Ganti Semua Ini Dengan Cookies Anda

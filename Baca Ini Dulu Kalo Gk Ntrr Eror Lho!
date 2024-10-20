@@ -1,0 +1,30 @@
+
+# Chioriya • KeiLa 3
+
+Skrip ini dibuat oleh **KeiLaSenpai** sebagai bagian dari proyek **Chioriya • KeiLa 3**.
+
+## Peringatan
+
+**Skrip ini tidak boleh dijual belikan** karena merupakan karya cipta yang dibuat untuk penggunaan pribadi atau komunitas tertentu. Menjual skrip ini tanpa izin merupakan pelanggaran hak cipta. Mohon hargai usaha dan kerja keras dari pembuatnya.
+
+Jika Anda ingin **mengubah** atau **mengambil** sebagian kode dari skrip ini, **harus meminta izin terlebih dahulu** dari pembuatnya. Hal ini dilakukan untuk menjaga integritas kode dan menghargai pembuat skrip.
+
+## Tata Cara Sebelum Dijalankan
+
+Sebelum menjalankan skrip ini, pastikan Anda melakukan beberapa konfigurasi berikut:
+
+1. **Ganti cookies**:
+   - Letakkan cookies Anda di file `lib/cookies.json`.
+   - Pastikan file `cookies.json` berada di dalam folder `lib`.
+
+2. **Setting lainnya**:
+   - Konfigurasi lain seperti pengaturan `owner` dan properti lainnya dapat ditemukan dan diubah di file `setting.js`.
+
+3. **Case handler**:
+   - Semua logika dan penanganan kasus utama berada di file `keila.js`. Pastikan Anda telah memahami dan memodifikasi sesuai kebutuhan sebelum digunakan.
+
+Jika semua pengaturan sudah dilakukan, Anda dapat menjalankan skrip ini sesuai dengan petunjuk yang telah diberikan.
+
+---
+
+Terima kasih telah menggunakan skrip ini, dan jangan lupa untuk selalu menghargai karya orang lain!

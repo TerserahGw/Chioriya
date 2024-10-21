@@ -28,7 +28,7 @@
       <td style="border: 1px solid #000; padding: 8px; text-align: center;">✅</td>
     </tr>
     <tr>
-      <td style="border: 1px solid #000; padding: 8px; text-align: center;">Wish Simulator</td>
+      <td style="border: 1px solid #000; padding: 8px; text-align: center;">Tools</td>
       <td style="border: 1px solid #000; padding: 8px; text-align: center;">✅</td>
     </tr>
     <tr>
@@ -57,6 +57,10 @@
     </tr>
     <tr>
       <td style="border: 1px solid #000; padding: 8px; text-align: center;">Api Service</td>
+      <td style="border: 1px solid #000; padding: 8px; text-align: center;">❓</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #000; padding: 8px; text-align: center;">Web GUI</td>
       <td style="border: 1px solid #000; padding: 8px; text-align: center;">❓</td>
     </tr>
     <tr>

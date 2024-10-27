@@ -16,6 +16,7 @@ global.fake = {
 	docs: fs.readFileSync('./src/media/fake.pdf'),
 	listfakedocs: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.openxmlformats-officedocument.presentationml.presentation','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/pdf'],
 	menunya: 'https://files.catbox.moe/5ie0yi.jpg',
+	menuvid: 'https://files.catbox.moe/5u7ry0.mp4',
 }
 
 global.my = {

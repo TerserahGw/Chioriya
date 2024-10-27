@@ -49,7 +49,7 @@ const acrcloud = require('acrcloud');
 const {igdl} = require('ruhend-scraper');
 const getGPT4js = require('gpt4js');
 const fx = require('@m00nbyte/currency-converter');
-
+const fgsd = require("@fongsidev/scraper");
 
 const {
 	BufferJSON,
@@ -136,11 +136,15 @@ const { igDlKei, sswebKei } = require('./lib/keiScrape');
 const { instagramKei } = require('./lib/igkei');
 const { download } = require('./lib/y2kei');
 const { gacha, historyGacha, inventoryGacha, rwdGacha } = require('./lib/gachaSimulator');
-const { buatWish } = require('./lib/buatWish');
 const { Telesticker } = require('./lib/telestiker');
 const { handlerMath } = require('./lib/exmath');
 const { transcribeAudio } = require('./lib/transkrip');
+const { TempMail } = require('tempmail.lol');
+const { mediafireDl } = require('./lib/mediafire');
 
+
+
+const tempmail = new TempMail();
 
 const agentOptions = {
   // Optional agent options
@@ -336,11 +340,8 @@ module.exports = keila = async (keila, m, chatUpdate, store) => {
 				: m.quoted
 				? m.quoted
 				: m;
-		const command = isCreator
-			? body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase()
-			: isCmd
-			? body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase()
-			: "";
+		const command = body.replace(prefix, "").trim().split(/ +/).shift().toLowerCase();
+
 		const text = (q = args.join(" "));
 		const mime = (quoted.msg || quoted).mimetype || "";
 		const qmsg = quoted.msg || quoted;
@@ -1964,20 +1965,48 @@ if (game.kuisquiz.hasOwnProperty(m.sender.split("@")[0])) {
 				break;
 			case "delete":
 			case "del":
-			case "d":
-				{
-					if (!m.quoted)
-						return m.reply("Reply pesan yang mau di delete");
-					await keila.sendMessage(m.chat, {
-						delete: {
-							remoteJid: m.chat,
-							fromMe: m.isBotAdmin ? false : true,
-							id: m.quoted.id,
-							participant: m.quoted.sender,
-						},
-					});
-				}
-				break;
+			case "d": {
+    if (!m.quoted) 
+        return m.reply("Reply pesan yang mau di delete");
+    
+    if (m.isAdmin || m.quoted.fromMe) {
+        await keila.sendMessage(m.chat, {
+            delete: {
+                remoteJid: m.chat,
+                fromMe: m.isBotAdmin ? false : true,
+                id: m.quoted.id,
+                participant: m.quoted.sender,
+            },
+        });
+    }
+}
+break;
+case "poll": {
+    if (!text) 
+        return m.keila(`Contoh Penggunaan: \n${usedPrefix + command} hello |yes|no`);
+
+    let a = text.split('|').slice(1);
+    if (!a[1]) 
+        return m.keila(`Format\n${usedPrefix + command} hello |yes|no`);
+    if (a[5]) 
+        return m.keila(`Terlalu banyak opsi, maksimal 5.\nFormat\n${usedPrefix + command} hello |yes|no`);
+    if (new Set(a).size !== a.length) 
+        return m.reply('Terdapat opsi duplikat!');
+
+    let cap = `*Polling Dari* ${m.pushName}\n*Pesan:* ${text.split('|')[0]}`;
+
+    const pollMessage = {
+        name: cap,
+        values: a,
+        multiselect: false,
+        selectableCount: 1,
+    };
+
+    await keila.sendMessage(m.chat, {
+        poll: pollMessage,
+    });
+}
+break;
 			case "linkgroup":
 			case "linkgrup":
 			case "linkgc":
@@ -2973,8 +3002,8 @@ break;
     if (!m.isGroup) {
       return keila.sendMessage(m.chat, { text: mess.group }, { quoted: fkontak });
     } else if (db.groups[m.chat]?.sekrip) {
-      const scNya = fs.readFileSync('./src/media/Chioriya_V2Beta1.zip');
-      await keila.sendMessage(m.chat, { document: scNya, mimetype: "application/zip", fileName: `Chioriya_V2_Test.zip` }, { quoted: fkontak });
+      const scNya = fs.readFileSync('./src/media/Chioriya_V2.zip');
+      await keila.sendMessage(m.chat, { document: scNya, mimetype: "application/zip", fileName: `Chioriya_V2.zip` }, { quoted: fkontak });
     } else {
       return keila.sendMessage(m.chat, { text: 'Maaf, creator tidak mempublikasikan ke grup ini.' }, { quoted: fkontak });
     }
@@ -3204,6 +3233,28 @@ case "giveaway": {
     }
 }
 break;
+case "button":
+{
+    const keilaDB = loadKeilaDB();
+    const senderId = m.sender;
+
+    if (!args[0]) {
+        m.keila('Format salah! Gunakan .button <on/off>');
+        break;
+    }
+
+    const status = args[0].toLowerCase();
+    if (status !== 'on' && status !== 'off') {
+        m.reply('Format salah! Gunakan .button <on/off>');
+        break;
+    }
+
+    keilaDB[senderId].statusbt = (status === 'on');
+
+    saveKeilaDB(keilaDB);
+    m.reply(`Button telah ${status === 'on' ? 'diaktifkan' : 'dinonaktifkan'}.`);
+    break;
+}
 
 
 			case "setlangguage":
@@ -3646,6 +3697,7 @@ break;
 			case "tes":
 			case "bot":
 				{
+				  const keilaDB = loadKeilaDB();
 					if (text && text.startsWith("--") && isCreator) {
 						let buttonnya = [
 							{
@@ -3746,15 +3798,19 @@ break;
 								},
 							},
 						];
-						await keila.sendButtonMsg(
-							m.chat,
-							"Bot Settings",
-							ucapanWaktu,
-							"Silahkan dipilih Owner🫡",
-							null,
-							buttonnya,
-							m,
-						);
+						if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+						  await m.keila(`*List Settings!*\n\n- anticall\n- autobio\n- autoread\n- autotype\n- readsw\n- multiprefix\n- reactch\n\nExample: .bot anticall on`);
+						} else {
+						  await keila.sendButtonMsg(
+				  			m.chat,
+					  		"Bot Settings",
+				  			ucapanWaktu,
+				  			"Silahkan dipilih Owner🫡",
+					  		null,
+					  		buttonnya,
+					  		m,
+					  	);
+						};
 					} else if (text && isCreator) {
 						if (text === "anticall on")
 							(global.settings.anticall = true),
@@ -4403,6 +4459,44 @@ case "sendvch":
     } catch (error) {
         console.error("Terjadi error saat mengirim video:", error);
         m.reply('Pengiriman video gagal.');
+    }
+}
+break;
+case "tempmail": {
+    try {
+        const inbox = await tempmail.createInbox();
+        const emailMessage = `*Alamat Email Sementara:*\n\n${inbox.address}\n\nToken untuk memeriksa inbox akan dikirim melalui pesan pribadi. Gunakan token tersebut dengan perintah .checkmail.`;
+        await m.keila(emailMessage);
+        await keila.sendMessage(m.sender, { text: inbox.token }, { quoted: fkontak });
+    } catch (error) {
+        console.error('Error:', error);
+        m.reply('Gagal membuat alamat email sementara.');
+    }
+}
+break;
+
+case "checkmail": {
+    if (!text) 
+        return m.keila('Harap masukkan token dari email sementara yang ingin diperiksa.\n\nContoh: .checkmail <token>');
+
+    try {
+        const emails = await tempmail.checkInbox(text);
+        if (!emails || emails.length === 0) 
+            return m.reply('Tidak ada pesan atau inbox sudah kedaluwarsa.');
+
+        const messages = emails.map(email => `
+*Dari:* ${email.from}
+*Subjek:* ${email.subject}
+*Tanggal:* ${new Date(email.date).toLocaleString()}
+*Isi Pesan:*
+${email.body}
+        `).join('\n\n---\n\n');
+
+        const replyMessage = `*Pesan di Inbox:*\n\n${messages}`;
+        await m.reply(replyMessage);
+    } catch (error) {
+        console.error('Error:', error);
+        m.reply('Gagal memeriksa pesan di inbox.');
     }
 }
 break;
@@ -6355,7 +6449,12 @@ case "splay":
         return m.keila(
             `Example: ${prefix + command} query_spotify`,
         );
-    }
+    };
+    const keilaDB = loadKeilaDB();
+    
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playsp`);
+    };
 
     m.loading();
 
@@ -6447,6 +6546,72 @@ case "splay":
     }
 }
 break;
+case "playsp":
+{
+    if (!text) {
+        return m.keila(
+            `Example: ${prefix + command} song_name`,
+        );
+    }
+
+    m.loading();
+
+    const spotify = new Spotify();
+
+    try {
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+            return m.reply('Failed to get access token.');
+        }
+
+        const searchResults = await searchSpotify(accessToken, text);
+        if (!searchResults || searchResults.length === 0) {
+            return m.reply('No results found.');
+        }
+
+        const formattedResults = formatSearchResults(searchResults);
+        const randomIndex = Math.floor(Math.random() * formattedResults.length);
+        const selectedResult = formattedResults[randomIndex];
+        const url = selectedResult.url;
+
+        const details = await spotify.getDetails(url);
+        const downloadLink = await spotify.download(url);
+
+        const response = await axios.get(downloadLink, { responseType: 'arraybuffer' });
+        const audioBuffer = Buffer.from(response.data, 'binary');
+
+        const docs = {
+            audio: audioBuffer,
+            mimetype: 'audio/mp4',
+            fileName: details.title,
+            contextInfo: {
+                mentionedJid: [
+                    m.sender
+                ],
+                forwardingScore: 10,
+                isForwarded: true,
+                externalAdReply: {
+                    title: details.title,
+                    body: `Artist: ${details.artist}\nRelease Date: ${details.date}`,
+                    showAdAttribution: true,
+                    thumbnailUrl: details.thumbnail,
+                    mediaType: 1,
+                    previewType: 0,
+                    renderLargerThumbnail: false,
+                    mediaUrl: downloadLink,
+                    sourceUrl: url,
+                },
+            },
+        };
+
+        await keila.sendMessage(m.chat, docs, { quoted: m });
+
+    } catch (error) {
+        console.error("Error processing Spotify search", error);
+        m.reply("An error occurred while processing the search.");
+    }
+}
+break;
 case "play":
 {
     if (!text) {
@@ -6454,6 +6619,11 @@ case "play":
             `Example: ${prefix + command} query_youtube`,
         );
     }
+    const keilaDB = loadKeilaDB();
+    
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playaudio / .playvideo`);
+    };
 
     m.loading();
 
@@ -6543,7 +6713,13 @@ case "play2":
         return m.keila(
             `Example: ${prefix + command} query_youtube`,
         );
-    }
+      }
+    
+    const keilaDB = loadKeilaDB();
+    
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playaudio2 / .playvideo2`);
+    };
 
     m.loading();
 
@@ -6634,6 +6810,12 @@ case "yt":
             `Example: ${prefix + command} url_youtube`,
         );
     }
+    
+    const keilaDB = loadKeilaDB();
+    
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .yta / .ytv / .yta2 / .ytv2`);
+    };
 
     m.loading();
 
@@ -6691,6 +6873,7 @@ case "yt":
 }
 break;
 case "playmp3":
+case "playa":
 case "playaudio":
 {
     if (!text) {
@@ -6887,6 +7070,7 @@ case "ytvideo":
 }
 break;
 case "playmp4":
+case "playv":
 case "playvideo":
 {
     if (!text) {
@@ -7190,6 +7374,105 @@ case "spotifylirik":
     }
 }
 break;
+case "mega": {
+            try {
+                if (!text) 
+                    return m.keila(`Linknya? \n\nContoh: .mega <link mega>`);
+
+                const file = File.fromURL(text);
+                await file.loadAttributes();
+
+                if (file.size >= 50000000)
+                    return m.reply('Error: File size is too large (Maximum Size: 50MB)');
+
+                let caption = `*Done!*\n\nFile: ${file.name}\nSize: ${formatBytes(file.size)}`;
+
+                const data = await file.downloadBuffer();
+                const fileExtension = path.extname(file.name).toLowerCase();
+                const mimeTypes = {
+                    '.mp4': 'video/mp4',
+                    '.pdf': 'application/pdf',
+                    '.zip': 'application/zip',
+                    '.rar': 'application/x-rar-compressed',
+                    '.7z': 'application/x-7z-compressed',
+                    '.jpg': 'image/jpeg',
+                    '.jpeg': 'image/jpeg',
+                    '.png': 'image/png',
+                };
+
+                let mimetype = mimeTypes[fileExtension] || 'application/octet-stream';
+
+                await keila.sendMessage(m.chat, data, file.name, caption, m, null, { mimetype, asDocument: true });
+            } catch (error) {
+                return m.reply(`Error: ${error.message}`);
+            }
+        }
+        break;
+        case "mediafire": {
+    let limit = 50;
+
+    if (!text) return m.reply(`✳️ Masukkan link MediaFire setelah perintah`);
+    m.react('⏳');
+
+    try {
+        console.log(`Memulai pengunduhan dari: ${text}`);
+        const res = await mediafireDl(text);
+        console.log(`Respon dari mediafireDl:`, res);
+
+        if (!res || res.length === 0) {
+            return m.reply('Error: Tidak ada data yang ditemukan dari link tersebut');
+        }
+
+        const sizeInMB = parseFloat(res[0].size.split('MB')[0]);
+
+        if (sizeInMB >= limit) {
+            return m.reply(`Error: Ukuran file terlalu besar (Maksimal: ${limit}MB)`);
+        }
+
+        let caption = `*File:* ${res[0].nama}\n*Ukuran:* ${res[0].size}`;
+
+        await m.reply(caption);
+
+        await keila.sendMessage(
+            m.chat,
+            { document: { url: res[0].link }, fileName: res[0].nama, mimetype: res[0].mime },
+            { quoted: m }
+        );
+        m.react('✅');
+    } catch (error) {
+        console.error('Terjadi kesalahan:', error);
+        m.reply('Error: Periksa link atau coba link lain');
+    }
+}
+break;
+        case "gdrive": {
+            let limit = 50000000;
+
+            if (!text) return m.keila(`Masukkan link Google Drive setelah perintah\n\nContoh: .gdrive <link>`);
+            m.react('⏳');
+
+            try {
+                let res = await fg.GDriveDl(text);
+
+                if (res.fileSize >= limit) {
+                    return m.reply('Error: Ukuran file terlalu besar (Maksimal: 50MB)');
+                }
+
+                let caption = `*File:* ${res.fileName}\n*Ukuran:* ${res.fileSize}`;
+
+                await m.reply(caption);
+
+                await keila.sendMessage(
+                    m.chat,
+                    { document: { url: res.downloadUrl }, fileName: res.fileName, mimetype: res.mimetype },
+                    { quoted: m }
+                );
+                m.react('✅');
+            } catch {
+                m.reply('Error: Periksa link atau coba link lain');
+            }
+        }
+        break;
 
 
 			case 'pixiv': {
@@ -7986,11 +8269,15 @@ break;
 				}
 				break;
 			case "tplay":
-case "ttsearch":
 {
     if (!text) {
         return m.keila(`Example: ${prefix + command} Hutao Edit`);
     }
+    const keilaDB = loadKeilaDB();
+    
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .ttsearch`);
+    };
 
     m.loading();
 
@@ -8019,10 +8306,10 @@ case "ttsearch":
         const bodyText = `*Title:* ${selectedResult.title}\n*Author:* ${selectedResult.author}\n*URL:* ${selectedResult.url}`;
 
         const buttonOptions = [
-            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Video","id":".tiktok ${selectedResult.url}"}` },
+            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Video","id":".tiktokmp4 ${selectedResult.url}"}` },
             { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Video HD","id":".tiktokhd ${selectedResult.url}"}` },
             { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Audio","id":".tiktokmp3 ${selectedResult.url}"}` },
-            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Cari Lagi","id":".ttsearch ${text}"}` }
+            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Cari Lagi","id":".tplay ${text}"}` }
         ];
 
         let msg = generateWAMessageFromContent(m.chat, {
@@ -8077,11 +8364,16 @@ case "ttsearch":
     }
 }
 break;
-case "tt":
+case "ttm":
 {
     if (!text) {
         return m.keila(`Example: ${prefix + command} Hutao Edit`);
     }
+    const keilaDB = loadKeilaDB();
+    
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playaudio / .playvideo`);
+    };
 
     m.loading();
 
@@ -8105,10 +8397,10 @@ case "tt":
         const bodyText = `*Title:* ${selectedResult.title}\n*Author:* ${selectedResult.author.fullname}\n*URL:* ${text}`;
 
         const buttonOptions = [
-            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Video","id":".tiktok ${text}"}` },
+            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Video","id":".tiktokmp4 ${text}"}` },
             { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Video HD","id":".tiktokhd ${text}"}` },
             { "name": "quick_reply", "buttonParamsJson": `{"display_text":"Audio","id":".tiktokmp3 ${text}"}` },
-            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"All","id":".alltiktok ${text}"}` }
+            { "name": "quick_reply", "buttonParamsJson": `{"display_text":"All","id":".tiktok ${text}"}` }
         ];
 
         let msg = generateWAMessageFromContent(m.chat, {
@@ -8163,9 +8455,91 @@ case "tt":
     }
 }
 break;
+case "ttsearch": {
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} query`);
+    }
 
+    try {
+        const searchResults = await tiktokSearchKei(text);
+        console.log(searchResults);
+
+        if (!searchResults || searchResults.length === 0) {
+            return m.reply("No results found.");
+        }
+
+        const randomIndex = Math.floor(Math.random() * searchResults.length);
+        const selectedResult = searchResults[randomIndex];
+
+        const result = await tiktokDlKei(selectedResult.url);
+        if (result.length === 0) {
+            return m.reply("No valid results found.");
+        }
+
+        const hasil = {
+            aurl: result.data[3].url,
+            vurl: result.data[1].url,
+            title: result.title,
+            thumb: result.cover
+        };
+
+        const videoDoc = {
+            video: { url: hasil.vurl },
+            caption: `*Title:* ${selectedResult.title}\n*Author:* ${selectedResult.author}\n*URL:* ${selectedResult.url}`,
+            mimetype: 'video/mp4',
+            fileName: hasil.title,
+            contextInfo: {
+                mentionedJid: [
+                    m.sender
+                ],
+                forwardingScore: 10,
+                isForwarded: true,
+                externalAdReply: {
+                    title: hasil.title,
+                    body: `Duration: ${result.duration}`,
+                    showAdAttribution: true,
+                    thumbnailUrl: hasil.thumb,
+                    mediaType: 1,
+                    previewType: 0,
+                    mediaUrl: hasil.vurl,
+                    sourceUrl: selectedResult.url
+                },
+            },
+        };
+
+        const audioDoc = {
+            audio: { url: hasil.aurl },
+            mimetype: 'audio/mp4',
+            fileName: `${hasil.title} - Audio`,
+            contextInfo: {
+                mentionedJid: [
+                    m.sender
+                ],
+                forwardingScore: 10,
+                isForwarded: true,
+                externalAdReply: {
+                    title: hasil.title,
+                    body: `Duration: ${result.duration}`,
+                    showAdAttribution: true,
+                    thumbnailUrl: hasil.thumb,
+                    mediaType: 1,
+                    previewType: 0,
+                    mediaUrl: hasil.aurl,
+                    sourceUrl: selectedResult.url
+                },
+            },
+        };
+
+        await keila.sendMessage(m.chat, videoDoc, { quoted: m });
+        await keila.sendMessage(m.chat, audioDoc, { quoted: m });
+
+        console.log("Video and audio search result sent successfully");
+    } catch (error) {
+        m.keila(`Error: ${error.message}`);
+    }
+}
+break;
 case "tiktokmp4":
-case "tiktok":
 {
     if (!text) {
         return m.keila(`Example: ${prefix + command} video_url`);
@@ -8304,7 +8678,8 @@ case "tiktokmp3":
 }
 break;
 
-case "alltiktok":
+case "tt":
+case "tiktok":
 {
     if (!text) {
         return m.keila(`Example: ${prefix + command} video_url`);
@@ -8682,6 +9057,8 @@ break;
     if (global.db.users[m.sender].uang < cost) {
         return m.reply("Uang tidak cukup untuk melakukan gacha.");
     }
+    
+    const keilaDB = loadKeilaDB();
 
     global.db.users[m.sender].uang -= cost;
 
@@ -8747,13 +9124,17 @@ break;
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await keila.sendMessage(m.chat, { video: { url: mediaUrl }, caption: `Obtained:\n${obtainedItems}\n\nSisa Primogems: ${remainingPrimogems}`}, { quoted: fkontak });
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    }
 }
 break;
 case "wishhst":
@@ -8778,6 +9159,7 @@ case "wishhistory": {
             return m.keila(`Format salah. Gunakan: ${prefix + command} [rarity] [page]`);
         }
     }
+    const keilaDB = loadKeilaDB();
 
     let history;
     if (rarityFilter) {
@@ -8859,13 +9241,17 @@ case "wishhistory": {
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await keila.sendMessage(m.chat, { image: { url: 'https://files.catbox.moe/qtq0gg.jpg' }, caption: `\n\nHistory Wish (Page ${page}/${totalPages}):\n\n${historyText}`}, { quoted: fkontak });
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    }
 }
 break;
 case "wishinv":
@@ -8880,6 +9266,7 @@ case "wishinventory": {
     if (!inventory || inventory.length === 0) {
         return m.reply(`Tidak ada item di inventory.`);
     }
+    const keilaDB = loadKeilaDB();
 
     let characters = inventory.filter(item => item.ischaracter);
     let weapons = inventory.filter(item => !item.ischaracter);
@@ -8959,13 +9346,17 @@ case "wishinventory": {
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await keila.sendMessage(m.chat, { image: { url: 'https://files.catbox.moe/uaes8c.jpg' }, caption: `Page ${page}/${totalPages}\n\n\nCharacter List:\n\n${characterListText || 'Tidak ada karakter di halaman ini.'}\n\nWeapons List:\n\n${weaponListText || 'Tidak ada senjata di halaman ini.'}`}, { quoted: fkontak });
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    }
 }
 break;
 
@@ -10143,6 +10534,7 @@ ${readmore}
    ${setv},    sendach
    ${setv},    sendvch
    ${setv},    totalfitur
+   ${setv},    nobutton (on/off)
 
  
 *✾* ┬─────「 \`\`\`Grup\`\`\` 」 °\` ※,
@@ -10196,6 +10588,9 @@ ${readmore}
    ${setv},    tiktok (url)
    ${setv},    facebook (url)
    ${setv},    gitrepo (url)
+   ${setv},    mediafire (url)
+   ${setv},    gdrive (url)
+   ${setv},    mega (url)
 
  
 *❖* ┬─────「 \`\`\`Tools\`\`\` 」 °\` ※,
@@ -10225,6 +10620,9 @@ ${readmore}
    ${setv},    cut
    ${setv},    resize
    ${setv},    cc (amt) (crc) (to crc)
+   ${setv},    poll
+   ${setv},    tempmail
+   ${setv},    checkmail
 
  
 *✾* ┬─────「 \`\`\`Ai\`\`\` 」 °\` ※,
@@ -10352,13 +10750,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "botmenu":
@@ -10415,6 +10819,7 @@ ${readmore}
    ${setv},    sendach
    ${setv},    sendvch
    ${setv},    totalfitur
+   ${setv},    nobutton (on/off)
 
 
 \`\`\`Bot Masih Dalam Tahap Pengembangan!\`\`\`
@@ -10467,13 +10872,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "groupmenu":
@@ -10580,13 +10991,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "searchmenu":
@@ -10680,13 +11097,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "downloadmenu":
@@ -10728,6 +11151,9 @@ ${readmore}
    ${setv},    tiktok (url)
    ${setv},    facebook (url)
    ${setv},    gitrepo (url)
+   ${setv},    mediafire (url)
+   ${setv},    gdrive (url)
+   ${setv},    mega (url)
 
 
 \`\`\`Bot Masih Dalam Tahap Pengembangan!\`\`\`
@@ -10780,13 +11206,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "toolsmenu":
@@ -10841,6 +11273,9 @@ ${readmore}
    ${setv},    whatmusik
    ${setv},    giveaway
    ${setv},    cc (amt) (crc) (to crc)
+   ${setv},    poll
+   ${setv},    tempmail
+   ${setv},    checkmail
 
 
 \`\`\`Bot Masih Dalam Tahap Pengembangan!\`\`\`
@@ -10893,13 +11328,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "aimenu":
@@ -10994,13 +11435,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "gamemenu":
@@ -11096,13 +11543,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "funmenu":
@@ -11200,13 +11653,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "ownermenu":
@@ -11312,13 +11771,19 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 
@@ -11586,13 +12051,17 @@ ${readmore}
         }
     }, {});
 
-    await keila.relayMessage(msg.key.remoteJid, msg.message, {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+      await m.smedia('gvideo', global.fake.menuvid, tks);
+    } else {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
-    }).then(response => {
+      }).then(response => {
         console.log("Message sent successfully", response);
-    }).catch(error => {
+      }).catch(error => {
         console.error("Error sending message", error);
-    });
+      });
+    };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
     await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }

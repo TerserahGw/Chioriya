@@ -1,0 +1,376 @@
+{
+  "gi": {
+    "albedo": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Albedo_Sub%20DPS.jpg"
+      }
+    ],
+    "alhaitham": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Alhaitham_Main%20DPS.jpg"
+      }
+    ],
+    "aloy": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Aloy_Support.jpg"
+      }
+    ],
+    "amber": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Amber_Support.jpg"
+      }
+    ],
+    "arataki itto": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Arataki%20Itto_Main%20DPS.jpg"
+      }
+    ],
+    "arlecchino": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Arlecchino_Main%20DPS.jpg"
+      }
+    ],
+    "baizhu": [
+      {
+        "tipe": "Healer",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Baizhu_Healer.jpg"
+      }
+    ],
+    "barbara": [
+      {
+        "tipe": "Healer",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Barbara_Healer.jpg"
+      }
+    ],
+    "beidou": [
+      {
+        "tipe": "Burst DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Beidou_Burst%20DPS.jpg"
+      }
+    ],
+    "bennett": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Bennett_Support.jpg"
+      }
+    ],
+    "candace": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Candace_Support.jpg"
+      }
+    ],
+    "charlotte": [
+      {
+        "tipe": "Healer",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Charlotte_Healer.jpg"
+      }
+    ],
+    "chevreuse": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Chevreuse_Support.jpg"
+      }
+    ],
+    "chiori": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Chiori_Sub%20DPS.jpg"
+      }
+    ],
+    "chongyun": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Chongyun_Sub%20DPS.jpg"
+      }
+    ],
+    "collei": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Collei_Support.jpg"
+      }
+    ],
+    "cyno": [
+      {
+        "tipe": "Aggravate",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Cyno_Aggravate.jpg"
+      },
+      {
+        "tipe": "Bloom",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Cyno_Bloom.jpg"
+      },
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Cyno_Main%20DPS.jpg"
+      }
+    ],
+    "dehya": [
+      {
+        "tipe": "Burgeon",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Dehya_Burgeon.jpg"
+      },
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Dehya_Main%20DPS.jpg"
+      },
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Dehya_Support.jpg"
+      }
+    ],
+    "diluc": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Diluc_Main%20DPS.jpg"
+      }
+    ],
+    "diona": [
+      {
+        "tipe": "Shielder",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Diona_Shielder.jpg"
+      }
+    ],
+    "dori": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Dori_Support.jpg"
+      }
+    ],
+    "eula": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Eula_Main%20DPS.jpg"
+      }
+    ],
+    "faruzan": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Faruzan_Support.jpg"
+      }
+    ],
+    "fischl": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Fischl_Sub%20DPS.jpg"
+      }
+    ],
+    "freminet": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Freminet_Main%20DPS.jpg"
+      }
+    ],
+    "furina": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Furina_Sub%20DPS.jpg"
+      }
+    ],
+    "ganyu": [
+      {
+        "tipe": "Burst DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Ganyu_Burst%20DPS.jpg"
+      },
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Ganyu_Main%20DPS.jpg"
+      }
+    ],
+    "gorou": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Gorou_Support.jpg"
+      }
+    ],
+    "hu tao": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Hu%20Tao_Main%20DPS.jpg"
+      }
+    ],
+    "jean": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Jean_Support.jpg"
+      }
+    ],
+    "kaedehara kazuha": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Kaedehara%20Kazuha_Support.jpg"
+      }
+    ],
+    "kaeya": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Kaeya_Sub%20DPS.jpg"
+      }
+    ],
+    "kamisato ayaka": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Kamisato%20Ayaka_Main%20DPS.jpg"
+      }
+    ],
+    "kamisato ayato": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Kamisato%20Ayato_Main%20DPS.jpg"
+      }
+    ],
+    "keqing": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Keqing_Main%20DPS.jpg"
+      }
+    ],
+    "kirara": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Kirara_Support.jpg"
+      }
+    ],
+    "kokomi": [
+      {
+        "tipe": "Healer",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Kokomi_Healer.jpg"
+      }
+    ],
+    "layla": [
+      {
+        "tipe": "Shielder",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Layla_Shielder.jpg"
+      }
+    ],
+    "lisa": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Lisa_Support.jpg"
+      }
+    ],
+    "mika": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Mika_Support.jpg"
+      }
+    ],
+    "mona": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Mona_Sub%20DPS.jpg"
+      }
+    ],
+    "nahida": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Nahida_Main%20DPS.jpg"
+      }
+    ],
+    "ningguang": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Ningguang_Sub%20DPS.jpg"
+      }
+    ],
+    "noelle": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Noelle_Main%20DPS.jpg"
+      }
+    ],
+    "raiden shogun": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Raiden%20Shogun_Main%20DPS.jpg"
+      }
+    ],
+    "raspberry": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Raspberry_Main%20DPS.jpg"
+      }
+    ],
+    "sara": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Sara_Support.jpg"
+      }
+    ],
+    "sucrose": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Sucrose_Support.jpg"
+      }
+    ],
+    "tartaglia": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Tartaglia_Main%20DPS.jpg"
+      }
+    ],
+    "thoma": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Thoma_Support.jpg"
+      }
+    ],
+    "venti": [
+      {
+        "tipe": "Support",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Venti_Support.jpg"
+      }
+    ],
+    "wanderer": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Wanderer_Main%20DPS.jpg"
+      }
+    ],
+    "xiangling": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Xiangling_Sub%20DPS.jpg"
+      }
+    ],
+    "xingqiu": [
+      {
+        "tipe": "Sub DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Xingqiu_Sub%20DPS.jpg"
+      }
+    ],
+    "yae miko": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Yae%20Miko_Main%20DPS.jpg"
+      }
+    ],
+    "yanfei": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Yanfei_Main%20DPS.jpg"
+      }
+    ],
+    "yoimiya": [
+      {
+        "tipe": "Main DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Yoimiya_Main%20DPS.jpg"
+      }
+    ],
+    "zhongli": [
+      {
+        "tipe": "Burst DPS",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Zhongli_Burst%20DPS.jpg"
+      },
+      {
+        "tipe": "Shielder",
+        "url": "https://raw.githubusercontent.com/FortOfFans/GI/refs/heads/main/sheets/Zhongli_Shielder.jpg"
+      }
+    ]
+  }
+}

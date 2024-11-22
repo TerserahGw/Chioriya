@@ -1,0 +1,32 @@
+[
+  {
+    "id": "gsLf",
+    "name": "Primogems",
+    "price": 2500,
+    "amt": 16000,
+    "seller": "Lia",
+    "rec": true,
+    "pro": "Chioriya Wish Simulator",
+    "kon": "6289646942000"
+  },
+  {
+    "id": "mqgW",
+    "name": "Stamina",
+    "price": 500,
+    "amt": 100,
+    "seller": "Lia",
+    "rec": false,
+    "pro": "Chioriya Wish Simulator",
+    "kon": "6289646942000"
+  },
+  {
+    "id": "zff1",
+    "name": "Chioriya V2.2",
+    "price": 0,
+    "amt": 1,
+    "seller": "Lia",
+    "rec": true,
+    "pro": "Script Bot WhatsApp",
+    "kon": "6289646942000"
+  }
+]

@@ -1,6 +1,6 @@
 {
   "name": "keila",
-  "version": "1.0.2",
+  "version": "3.0.1",
   "description": "Bot WhatsApp Using Lib Baileys Multi Device",
   "main": "start.js",
   "type": "commonjs",
@@ -31,6 +31,8 @@
     "@fongsidev/scraper": "^1.0.2-4.2",
     "@hapi/boom": "^10.0.0",
     "@ibaraki-douji/pixivts": "^2.4.1",
+    "@moonr/spotify": "^0.0.2",
+    "@mrnima/instagram-downloader": "^1.0.0",
     "@vitalets/google-translate-api": "^9.2.0",
     "@whiskeysockets/baileys": "github:cifumo/Baileys",
     "acrcloud": "^1.4.0",
@@ -56,11 +58,13 @@
     "fs": "^0.0.1-security",
     "fs-extra": "^11.1.0",
     "g-i-s": "^2.1.6",
+    "genshin-db": "^5.1.9",
     "gm": "^1.25.0",
     "google-it": "^1.6.4",
     "googlethis": "^1.7.1",
     "got": "^13.0.0",
-    "gpt4js": "^1.7.7",
+    "gpt4js": "^1.7.8",
+    "gpti": "^2.1.8",
     "http": "^0.0.1-security",
     "https": "^1.0.0",
     "human-readable": "^0.2.1",
@@ -97,7 +101,7 @@
     "remove.bg": "^1.3.0",
     "request": "^2.88.2",
     "requests": "^0.3.0",
-    "ruhend-scraper": "^7.0.6",
+    "ruhend-scraper": "8.0.3",
     "rumus-bdr": "^1.0.0",
     "scrape-primbon": "^1.1.0",
     "sharp": "^0.32.6",
@@ -122,12 +126,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TerserahGw/Chioriya.git"
+    "url": "git+https://github.com/TerserahGw/chioriya.git"
   },
   "bugs": {
-    "url": "https://github.com/TerserahGw/Chioriya/issues"
+    "url": "https://github.com/TerserahGw/chioriya/issues"
   },
-  "homepage": "https://github.com/TerserahGw/Chioriya#readme",
+  "homepage": "https://github.com/TerserahGw/chioriya#readme",
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "devDependencies": {
     "@m00nbyte/currency-converter": "^1.0.1"

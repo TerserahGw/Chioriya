@@ -42,7 +42,8 @@ const ytSearch = require('yt-search');
 const { createAgent } = require('@distube/ytdl-core/lib/utils');
 const { PassThrough } = require('stream');
 const { WritableStreamBuffer } = require('stream-buffers');
-const Spotify = require('./lib/Spotify');
+//const Spotify = require('./lib/Spotify');
+const spotify = require('@moonr/spotify')
 const { getAccessToken, searchSpotify, formatSearchResults } = require('./lib/spotifySearch');
 const { translate } = require('@vitalets/google-translate-api');
 const acrcloud = require('acrcloud');
@@ -50,6 +51,9 @@ const {igdl} = require('ruhend-scraper');
 const getGPT4js = require('gpt4js');
 const fx = require('@m00nbyte/currency-converter');
 const fgsd = require("@fongsidev/scraper");
+const { gpt } = require("gpti");
+const { instagramDownload } = require("@mrnima/instagram-downloader");
+const genshindb = require('genshin-db');
 
 const {
 	BufferJSON,
@@ -80,6 +84,7 @@ const {
 } = require("./lib/screaper");
 const { ytplay2, ytdl2 } = require("./lib/yt");
 const { tiktokDlKei, searchTikTokKei, tiktokSearchKei } = require("./lib/tiktok");
+const { addKeiStore, dellStore } = require('./lib/storekei.js');
 const processing = require("./lib/upscale");
 const {
 	gameSlot,
@@ -141,7 +146,7 @@ const { handlerMath } = require('./lib/exmath');
 const { transcribeAudio } = require('./lib/transkrip');
 const { TempMail } = require('tempmail.lol');
 const { mediafireDl } = require('./lib/mediafire');
-
+const UlarTangga = require('./lib/ulartangga');
 
 
 const tempmail = new TempMail();
@@ -759,6 +764,63 @@ if (
       console.error(`Gagal menghapus bot: ${error.message}`);
     }
   }
+}
+
+if (db.groups[m.chat].chioriya && m.text.includes('@')) {
+    //const ownerUsername = m.metadata.owner.split('@')[0];
+    const ownerUsername = '48459262621';
+
+    if (m.text.includes('@' + ownerUsername)) {
+        const messageParts = m.text.split(' ');
+        const message = messageParts.slice(1).join(' ');
+
+        const caiDatabasePath = path.join(__dirname, 'database', 'cai.json');
+        let caiDatabase = {};
+
+        if (fs.existsSync(caiDatabasePath)) {
+            const fileContent = fs.readFileSync(caiDatabasePath, 'utf8');
+            caiDatabase = JSON.parse(fileContent);
+        }
+        const senderData = caiDatabase[m.sender];
+        if (senderData && senderData.activeChar && senderData.setatus) {
+            const charData = senderData.data.find(entry => entry.charname === senderData.activeChar);
+            if (charData && senderData.setatus) {
+                const { charid, chatid } = charData;
+                const apiUrl = `https://keilaapi.vercel.app/api/cai?charid=${charid}&message=${encodeURIComponent(message)}&id=${chatid}`;
+                try {
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    if (data && data.reply) {
+                        await keila.relayMessage(
+                            m.chat,
+                            {
+                                extendedTextMessage: {
+                                    text: data.reply,
+                                    contextInfo: {
+                                        mentionedJid: [m.sender],
+                                        isForwarded: true,
+                                        forwardingScore: 1,
+                                        quotedMessage: {
+                                            conversation: message,
+                                        },
+                                        ...m.key,
+                                    },
+                                },
+                            },
+                            {}
+                        );
+                    }
+                } catch (error) {
+                    console.error('Error fetching data from CAI API:', error);
+                    await keila.sendMessage(m.sender, { text: 'Terjadi kesalahan saat memproses permintaan Anda.' }, { quoted: m });
+                }
+            } else {
+                await keila.sendMessage(m.sender, { text: `Karakter aktif tidak ditemukan dalam data Anda.\n\nInfo Lebih Lanjut Ketik .cai\nClue: cai setats, cai on, cai set` }, { quoted: m });
+            }
+        } else {
+            await keila.sendMessage(m.sender, { text: `Data pengaturan atau karakter aktif tidak ditemukan.\n\nInfo Lebih Lanjut Ketik .cai\nClue: cai setats, cai on, cai set` }, { quoted: m });
+        }
+    }
 }
 
 
@@ -1627,6 +1689,48 @@ if (game.kuisquiz.hasOwnProperty(m.sender.split("@")[0])) {
 					});
 				}
 				break;
+				case "addstore":
+    {
+        if (!isCreator) return m.reply(mess.owner);
+        if (!text) return m.keila(`Example:\n${prefix + command} <name>|<price>|<amt>|<seller>|<rec (true/false)>|<pro>|<kon>`);
+
+        let [name, price, amt, seller, rec, pro, kon] = text.split`|`;
+        if (!name || !price || !amt || !seller || !pro || !kon) return m.reply("Semua parameter wajib diisi!");
+
+        try {
+            const { addKeiStore } = require('./lib/storekei');
+            const result = await addKeiStore({
+                name,
+                price: parseInt(price),
+                amt: parseInt(amt),
+                seller,
+                rec: rec === 'true',
+                pro,
+                kon
+            });
+            m.reply(result.message);
+        } catch (error) {
+            m.reply("Gagal menambahkan produk: " + error.message);
+        }
+    }
+    break;
+case "dellstore":
+    {
+        if (!isCreator) return m.reply(mess.owner);
+        if (!text) return m.keila(`Example:\n${prefix + command} <id_produk>`);
+
+        const productId = text.trim();
+
+        try {
+            const { dellStore } = require('./lib/storekei');
+            const result = await dellStore(productId);
+            m.reply(result.message);
+        } catch (error) {
+            m.reply("Gagal menghapus produk: " + error.message);
+        }
+    }
+    break;
+
 			case "addpr":
 			case "addprem":
 			case "addpremium":
@@ -2055,6 +2159,9 @@ break;
 					if (!m.isGroup) return m.reply(mess.group);
 					if (!m.isAdmin) return m.reply(mess.admin);
 					if (!m.isBotAdmin) return m.reply(mess.botAdmin);
+					
+					const keilaDB = loadKeilaDB();
+
 					if (text === "close") {
 						await keila
 							.groupSettingUpdate(m.chat, "announcement")
@@ -2064,6 +2171,9 @@ break;
 							.groupSettingUpdate(m.chat, "not_announcement")
 							.then(res => m.reply(`*Sukses Membuka Group*`));
 					} else {
+					  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
+              return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .group on/off");
+            }
 						let buttonnya = [
 							{
 								name: "single_select",
@@ -2107,6 +2217,9 @@ break;
 {
 	if (!m.isGroup) return m.reply(mess.group);
 	if (!m.isAdmin) return m.reply(mess.admin);
+	
+	const keilaDB = loadKeilaDB();
+  
 	if (text === "on") {
 		if (db.groups[m.chat].mute)
 			return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2116,6 +2229,7 @@ break;
 		db.groups[m.chat].mute = false;
 		m.reply("*Group Telah Dibuka !*");
 	} else {
+	  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .mute on/off")};
 		let buttonnya = [
 			{
 				name: "single_select",
@@ -2157,6 +2271,9 @@ case "nsfw":
 {
 	if (!m.isGroup) return m.reply(mess.group);
 	if (!m.isAdmin) return m.reply(mess.admin);
+	
+	const keilaDB = loadKeilaDB();
+
 	if (text === "on") {
 		if (db.groups[m.chat].nsfw)
 			return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2166,6 +2283,7 @@ case "nsfw":
 		db.groups[m.chat].nsfw = false;
 		m.reply("*NSFW Non Aktif !*");
 	} else {
+	  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .nsfw on/off")};
 		let buttonnya = [
 			{
 				name: "single_select",
@@ -2207,6 +2325,9 @@ case "antivirtex":
 {
 	if (!m.isGroup) return m.reply(mess.group);
 	if (!m.isAdmin) return m.reply(mess.admin);
+	
+	const keilaDB = loadKeilaDB();
+
 	if (text === "on") {
 		if (db.groups[m.chat].antivirtex)
 			return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2216,6 +2337,7 @@ case "antivirtex":
 		db.groups[m.chat].antivirtex = false;
 		m.reply("*Anti Virtex Mati !*");
 	} else {
+	  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .antivirtex on/off")};
 		let buttonnya = [
 			{
 				name: "single_select",
@@ -2257,6 +2379,9 @@ case "antitoxic":
 {
 	if (!m.isGroup) return m.reply(mess.group);
 	if (!m.isAdmin) return m.reply(mess.admin);
+	
+	const keilaDB = loadKeilaDB();
+  
 	if (text === "on") {
 		if (db.groups[m.chat].antitoxic)
 			return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2266,6 +2391,7 @@ case "antitoxic":
 		db.groups[m.chat].antitoxic = false;
 		m.reply("*Anti Toxic Non Aktif !*");
 	} else {
+	  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .antitoxic on/off")};
 		let buttonnya = [
 			{
 				name: "single_select",
@@ -2307,6 +2433,9 @@ case "setinfo":
 {
 	if (!m.isGroup) return m.reply(mess.group);
 	if (!m.isAdmin) return m.reply(mess.admin);
+	
+	const keilaDB = loadKeilaDB();
+
 	if (text === "on") {
 		if (db.groups[m.chat].setinfo)
 			return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2316,6 +2445,7 @@ case "setinfo":
 		db.groups[m.chat].setinfo = false;
 		m.reply("*Group Info Mati !*");
 	} else {
+	  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .setinfo on/off")};
 		let buttonnya = [
 			{
 				name: "single_select",
@@ -2357,6 +2487,9 @@ case "waktusholat":
 {
 	if (!m.isGroup) return m.reply(mess.group);
 	if (!m.isAdmin) return m.reply(mess.admin);
+	
+	const keilaDB = loadKeilaDB();
+
 	if (text === "on") {
 		if (db.groups[m.chat].waktusholat)
 			return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2366,6 +2499,7 @@ case "waktusholat":
 		db.groups[m.chat].waktusholat = false;
 		m.reply("*Sholat Info Non Aktif !*");
 	} else {
+	  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .waktusholat on/off")};
 		let buttonnya = [
 			{
 				name: "single_select",
@@ -2408,6 +2542,9 @@ break;
     if (!m.isGroup) return m.reply(mess.group);
     if (!m.isAdmin) return m.reply(mess.admin);
     if (!m.isBotAdmin) return m.reply(mess.botAdmin);
+    
+    const keilaDB = loadKeilaDB();
+
     if (text === "on") {
         if (db.groups[m.chat].antiBot)
             return m.reply("*Anti Bot Sudah Aktif Sebelumnya*");
@@ -2417,6 +2554,7 @@ break;
         db.groups[m.chat].antiBot = false;
         m.reply("*Anti Bot Tidak Aktif !*");
     } else {
+        if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .antibot on/off")};
         let buttonnya = [
             {
                 name: "single_select",
@@ -2454,10 +2592,71 @@ break;
     }
 }
 break;
+case "chioriya":
+{
+    if (!m.isGroup) return m.reply(mess.group);
+    if (!m.isAdmin) return m.reply(mess.admin);
+  
+    const keilaDB = loadKeilaDB();
+  
+    if (text === "on") {
+        if (db.groups[m.chat].chioriya)
+            return m.reply("*Sudah Aktif Sebelumnya*");
+        db.groups[m.chat].chioriya = true;
+        m.reply("*Chioriya Aktif !*");
+    } else if (text === "off") {
+        db.groups[m.chat].chioriya = false;
+        m.reply("*Chioriya Tidak Aktif !*");
+    } else {
+        if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { 
+            return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .chioriya on/off");
+        };
+        let buttonnya = [
+            {
+                name: "single_select",
+                buttonParamsJson: {
+                    title: "Pilih",
+                    sections: [
+                        {
+                            title: "Chioriya",
+                            rows: [
+                                {
+                                    title: "Chioriya Aktif",
+                                    description:
+                                        "Mengaktifkan Chioriya",
+                                    id: ".chioriya on",
+                                },
+                                {
+                                    title: "Chioriya Tidak Aktif",
+                                    description:
+                                        "Mematikan Chioriya",
+                                    id: ".chioriya off",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+        ];
+        await keila.sendButtonMsg(
+            m.chat,
+            "Mode Group",
+            ucapanWaktu,
+            "Silahkan dipilih 🎋",
+            null,
+            buttonnya,
+            m,
+        );
+    }
+}
+break;
 case "charai":
 {
     if (!m.isGroup) return m.reply(mess.group);
     if (!m.isAdmin) return m.reply(mess.admin);
+	
+  	const keilaDB = loadKeilaDB();
+  
     if (text === "on") {
         if (db.groups[m.chat].charai)
             return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2467,6 +2666,7 @@ case "charai":
         db.groups[m.chat].charai = false;
         m.reply("*CharAI Tidak Aktif !*");
     } else {
+        if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .charai on/off")};
         let buttonnya = [
             {
                 name: "single_select",
@@ -2510,6 +2710,9 @@ case "sekrip":
 {
     if (!m.isGroup) return m.reply(mess.group);
     if (!isCreator) return m.reply(mess.owner);
+	
+	  const keilaDB = loadKeilaDB();
+  
     if (text === "on") {
         if (db.groups[m.chat].sekrip)
             return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2519,6 +2722,7 @@ case "sekrip":
         db.groups[m.chat].sekrip = false;
         m.reply("*Free SC Tidak Aktif !*");
     } else {
+        if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .sekrip on/off")};
         let buttonnya = [
             {
                 name: "single_select",
@@ -2563,6 +2767,9 @@ break;
 					if (!m.isGroup) return m.reply(mess.group);
 					if (!m.isAdmin) return m.reply(mess.admin);
 					if (!m.isBotAdmin) return m.reply(mess.botAdmin);
+	
+	        const keilaDB = loadKeilaDB();
+  
 					if (text === "on") {
 						if (db.groups[m.chat].antilink)
 							return m.reply("*Sudah Aktif Sebelumnya*");
@@ -2572,6 +2779,7 @@ break;
 						db.groups[m.chat].antilink = false;
 						m.reply("*Anti Link Tidak Aktif !*");
 					} else {
+					  if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) { return m.keila("Maaf Tolong Gunakan Perintah Yang Benar!\n\nContoh: .antilink on/off")};
 						let buttonnya = [
 							{
 								name: "single_select",
@@ -3233,6 +3441,51 @@ case "giveaway": {
     }
 }
 break;
+case "store":
+    {
+        const fs = require('fs');
+        const path = require('path');
+        const filePath = path.join(__dirname, './database/storekei.json');
+
+        if (!fs.existsSync(filePath) || fs.readFileSync(filePath, 'utf8').length === 0) {
+            return m.reply("Tidak ada produk yang tersedia saat ini.");
+        }
+
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        
+        if (data.length === 0) {
+            return m.reply("Tidak ada produk yang tersedia saat ini.");
+        }
+
+        const sendPage = (pageNumber) => {
+            const itemsPerPage = 15;
+            const startIndex = (pageNumber - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+
+            const recommendedItems = data.filter(item => item.rec);
+            const paginatedItems = data.slice(startIndex, endIndex).filter(item => !item.rec);
+
+            let storeList = "*Chioriya Promoted Store*\n\nBerikut adalah barang yang dipromosikan oleh Chioriya:\n\n──────────────────────────\n";
+
+            recommendedItems.forEach((item) => {
+                storeList += `\n» *Nama*:   ${item.name}\n» *Harga*:   Rp${item.price}\n» *Jumlah*:   ${item.amt}\n» *Penjual*:   ${item.seller}\n» *Rekomendasi*:   Ya\n» *Jenis*:   ${item.pro}\n» *Kontak*:   ${item.kon}\n» *ID*:   ${item.id}\n\n──────────────────────────\n`;
+            });
+
+            paginatedItems.forEach((item) => {
+                storeList += `\n› *Nama*:   ${item.name}\n› *Harga*:   Rp${item.price}\n› *Jumlah*:   ${item.amt}\n› *Penjual*:   ${item.seller}\n› *Rekomendasi*:   ${item.rec ? "Ya" : "Tidak"}\n› *Jenis*:   ${item.pro}\n› *Kontak*:   ${item.kon}\n› *ID*:   ${item.id}\n\n──────────────────────────\n`;
+            });
+
+            storeList += `*Halaman ${pageNumber} dari ${Math.ceil(data.length / itemsPerPage)}*\n`;
+            storeList += "*Untuk informasi lebih lanjut atau pemesanan, hubungi penjual melalui kontak yang tertera.*\n\n";
+            
+            m.keila(storeList);
+        };
+
+        const page = parseInt(args[0]) || 1;
+        sendPage(page);
+    }
+    break;
+
 case "button":
 {
     const keilaDB = loadKeilaDB();
@@ -3798,7 +4051,7 @@ break;
 								},
 							},
 						];
-						if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+						if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
 						  await m.keila(`*List Settings!*\n\n- anticall\n- autobio\n- autoread\n- autotype\n- readsw\n- multiprefix\n- reactch\n\nExample: .bot anticall on`);
 						} else {
 						  await keila.sendButtonMsg(
@@ -5805,25 +6058,48 @@ case "ai": {
     return m.reply('Please provide a message to send to the AI.');
   }
 
-  const GPT4js = await getGPT4js();
+  /*const GPT4js = await getGPT4js();
 
   const options = {
     provider: 'Aryahcr',
     model: 'gpt-4'
-  };
+  };*/
 
   try {
-    const provider = await GPT4js.createProvider(options.provider);
+    //const responseText = await axios(`https://widipe.com/gpt4?text=${text}`);
+    //console.log(responseText.data);
+    /*const provider = await GPT4js.createProvider(options.provider);
     const messages = [
-      { role: "system", content: "You're an Indonesia expert bot owned by KeiLaSenpai. Always respond in Indonesian language only." },
+      { role: "system", content: "Always respond in Indonesian language only." },
       { role: 'user', content: text }
     ];
     const responseText = await provider.chatCompletion(messages, options);
+    console.log(responseText);
     
     const gptResponse = responseText.match(/"gpt":"(.*?)"/s);
-    const hasil = gptResponse ? ` ${gptResponse[1].replace(/\\n/g, '\n')}` : 'No valid response from AI.';
+    const hasil = gptResponse ? ` ${gptResponse[1].replace(/\\n/g, '\n')}` : 'No valid response from AI.';*/
     
-    await keila.sendMessage(m.chat, { text: responseText }, { quoted: fkontak });
+    let responseText = await gpt.v1({
+        messages: [
+            {
+                role: "assistant",
+                content: "Hello! How are you today?"
+            },
+            {
+                role: "user",
+                content: `Hello, my name is ${m.pushName}.`
+            },
+            {
+                role: "assistant",
+                content: `Hello, ${m.pushName} How are you today?`
+            }
+        ],
+        prompt: text,
+        model: "GPT-4",
+        markdown: false
+    });
+    
+    await keila.sendMessage(m.chat, { text: responseText.gpt }, { quoted: fkontak });
     
   } catch (error) {
     m.reply(`Error processing your request: ${error.message}`);
@@ -6452,7 +6728,7 @@ case "splay":
     };
     const keilaDB = loadKeilaDB();
     
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+    if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
       return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playsp`);
     };
 
@@ -6612,7 +6888,7 @@ case "playsp":
     }
 }
 break;
-case "play":
+case "yplay":
 {
     if (!text) {
         return m.keila(
@@ -6621,7 +6897,7 @@ case "play":
     }
     const keilaDB = loadKeilaDB();
     
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+    if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
       return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playaudio / .playvideo`);
     };
 
@@ -6707,7 +6983,7 @@ case "play":
     }
 }
 break;
-case "play2":
+case "yplay2":
 {
     if (!text) {
         return m.keila(
@@ -6717,7 +6993,7 @@ case "play2":
     
     const keilaDB = loadKeilaDB();
     
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+    if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
       return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playaudio2 / .playvideo2`);
     };
 
@@ -6813,7 +7089,7 @@ case "yt":
     
     const keilaDB = loadKeilaDB();
     
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+    if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
       return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .yta / .ytv / .yta2 / .ytv2`);
     };
 
@@ -6872,12 +7148,13 @@ case "yt":
     });
 }
 break;
+case "play":
 case "playmp3":
 case "playa":
 case "playaudio":
 {
     if (!text) {
-        return m.keila(`Example: ${prefix + command} video_url`);
+        return m.keila(`Example: ${prefix + command} Wanna Be`);
     }
 
     try {
@@ -7071,6 +7348,7 @@ case "ytvideo":
 break;
 case "playmp4":
 case "playv":
+case "playvid":
 case "playvideo":
 {
     if (!text) {
@@ -7177,6 +7455,46 @@ case "ytaudio2":
     }
 }
 break;
+case "playaudio2":
+case "playa2":
+case "playmp32":
+case "play2":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} Heat Waves`);
+    }
+
+    try {
+        const result = await ytSearch(text);
+        const videos = result.videos;
+        if (videos.length === 0) throw `No videos found for "${text}" :/`;
+        const randomIndex = Math.floor(Math.random() * videos.length);
+        const videoURL = videos[randomIndex].url;
+        for (const version of ['V2', 'V1']) {
+            const { status, result } = await download[version](videoURL, { type: 'audio', quality: 128 });
+
+            console.log(`Download Version: ${version}`);
+            console.log('Status:', status);
+            console.log('Result:', result);
+            
+            const urlToUse = result.audio.url || result.audio.buffer;
+
+            if (status) {
+                const doc = {
+                    audio: { url: urlToUse },
+                    mimetype: 'audio/mp4',
+                    fileName: result.title
+                };
+
+                await keila.sendMessage(m.chat, doc, { quoted: m });
+                break;
+            }
+        }
+    } catch (error) {
+        m.reply(`Error: ${error.message}`);
+    }
+}
+break;
 case "ytv2":
 case "ytvideo2":
 {
@@ -7220,6 +7538,290 @@ case "ytvideo2":
     }
 }
 break;
+case "playv2":
+case "playmp42":
+case "playvid2":
+case "playvideo2":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} Love Story`);
+    }
+
+    try {
+        const result = await ytSearch(text);
+        const videos = result.videos;
+        if (videos.length === 0) throw `No videos found for "${text}" :/`;
+        const randomIndex = Math.floor(Math.random() * videos.length);
+        const videoURL = videos[randomIndex].url;
+        for (const version of ['V2', 'V1']) {
+            const { status, result } = await download[version](videoURL, { type: 'video', quality: 360 });
+
+            console.log(`Download Version: ${version}`);
+            console.log('Status:', status);
+            console.log('Result:', result);
+            
+            const urlToUse = result.video.url || result.video.buffer;
+
+            if (status) {
+                const doc = {
+                    video: { url: urlToUse },
+                    mimetype: 'video/mp4',
+                    fileName: result.title
+                };
+
+                await keila.sendMessage(m.chat, doc, { quoted: m });
+                break;
+            }
+        }
+    } catch (error) {
+        m.reply(`Error: ${error.message}`);
+    }
+}
+break;
+case "playaudio3":
+case "play3":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} Heat Waves`);
+    }
+    m.react('⏳');
+
+    try {
+        const result = await ytSearch(text);
+        const videos = result.videos;
+        if (videos.length === 0) throw `No videos found for "${text}" :/`;
+        const randomIndex = Math.floor(Math.random() * videos.length);
+        const videoURL = videos[randomIndex].url;
+
+        let success = false;
+        for (let qualityKey of [3, 2, 1]) {
+            const { status, result: details } = await download.V3(videoURL, { type: 'audio', qualityKey });
+
+            console.log(`Download Attempt with QualityKey: ${qualityKey}`);
+            console.log('Status:', status);
+            console.log('Result:', details);
+            
+            if (status && details?.link) {
+                const doc = {
+                    audio: { url: details.link },
+                    mimetype: 'audio/mp4',
+                    fileName: details.title,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 10,
+                        isForwarded: true,
+                        externalAdReply: {
+                            title: details.title,
+                            body: `Duration: ${details.duration}`,
+                            showAdAttribution: true,
+                            thumbnailUrl: details.thumbnail,
+                            mediaType: 1,
+                            previewType: 0,
+                            renderLargerThumbnail: false,
+                            mediaUrl: details.link,
+                            sourceUrl: videoURL,
+                        },
+                    },
+                };
+
+                await keila.sendMessage(m.chat, doc, { quoted: m });
+                m.react('✅');
+                success = true;
+                break;
+            }
+        }
+
+        if (!success) {
+            m.keila("Unable to download audio. Please try another song or check the URL.");
+            m.react('❌');
+        }
+    } catch (error) {
+        m.reply(`Error: ${error.message}`);
+        m.react('❗');
+    }
+}
+break;
+case "playvid3":
+case "playvideo3":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} Heat Waves`);
+    }
+    m.react('⏳');
+
+    try {
+        const result = await ytSearch(text);
+        const videos = result.videos;
+        if (videos.length === 0) throw `No videos found for "${text}" :/`;
+        const randomIndex = Math.floor(Math.random() * videos.length);
+        const videoURL = videos[randomIndex].url;
+
+        let success = false;
+        for (let qualityKey of [5, 4, 3, 2, 1]) {
+            const { status, result: details } = await download.V3(videoURL, { type: 'video', qualityKey });
+
+            console.log(`Download Attempt with QualityKey: ${qualityKey}`);
+            console.log('Status:', status);
+            console.log('Result:', details);
+            
+            if (status && details?.link) {
+                const doc = {
+                    video: { url: details.link },
+                    mimetype: 'video/mp4',
+                    fileName: details.title,
+                    caption: `Title: ${details.title}`,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 10,
+                        isForwarded: true,
+                        externalAdReply: {
+                            title: details.title,
+                            body: `Duration: ${details.duration}`,
+                            showAdAttribution: true,
+                            thumbnailUrl: details.thumbnail,
+                            mediaType: 1,
+                            previewType: 0,
+                            renderLargerThumbnail: false,
+                            mediaUrl: details.link,
+                            sourceUrl: videoURL,
+                        },
+                    },
+                };
+
+                await keila.sendMessage(m.chat, doc, { quoted: m });
+                m.react('✅');
+                success = true;
+                break;
+            }
+        }
+
+        if (!success) {
+            m.keila("Unable to download video. Please try another video or check the URL.");
+            m.react('❌');
+        }
+    } catch (error) {
+        m.reply(`Error: ${error.message}`);
+        m.react('❗');
+    }
+}
+break;
+case "yta3":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} https://youtu.be/GXFvURYfCOA`);
+    }
+    m.react('⏳');
+
+    try {
+        const videoURL = text;
+
+        let success = false;
+        for (let qualityKey of [3, 2, 1]) {
+            const { status, result: details } = await download.V3(videoURL, { type: 'audio', qualityKey });
+
+            console.log(`Download Attempt with QualityKey: ${qualityKey}`);
+            console.log('Status:', status);
+            console.log('Result:', details);
+            
+            if (status && details?.link) {
+                const doc = {
+                    audio: { url: details.link },
+                    mimetype: 'audio/mp4',
+                    fileName: details.title,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 10,
+                        isForwarded: true,
+                        externalAdReply: {
+                            title: details.title,
+                            body: `Duration: ${details.duration}`,
+                            showAdAttribution: true,
+                            thumbnailUrl: details.thumbnail,
+                            mediaType: 1,
+                            previewType: 0,
+                            renderLargerThumbnail: false,
+                            mediaUrl: details.link,
+                            sourceUrl: videoURL,
+                        },
+                    },
+                };
+
+                await keila.sendMessage(m.chat, doc, { quoted: m });
+                m.react('✅');
+                success = true;
+                break;
+            }
+        }
+
+        if (!success) {
+            m.keila("Unable to download audio. Please try another link or check the URL.");
+            m.react('❌');
+        }
+    } catch (error) {
+        m.reply(`Error: ${error.message}`);
+        m.react('❗');
+    }
+}
+break;
+case "ytv3":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} https://youtu.be/GXFvURYfCOA`);
+    }
+    m.react('⏳');
+
+    try {
+        const videoURL = text;
+
+        let success = false;
+        for (let qualityKey of [5, 4, 3, 2, 1]) {
+            const { status, result: details } = await download.V3(videoURL, { type: 'video', qualityKey });
+
+            console.log(`Download Attempt with QualityKey: ${qualityKey}`);
+            console.log('Status:', status);
+            console.log('Result:', details);
+            
+            if (status && details?.link) {
+                const doc = {
+                    video: { url: details.link },
+                    mimetype: 'video/mp4',
+                    fileName: details.title,
+                    caption: `Title: ${details.title}`,
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        forwardingScore: 10,
+                        isForwarded: true,
+                        externalAdReply: {
+                            title: details.title,
+                            body: `Duration: ${details.duration}`,
+                            showAdAttribution: true,
+                            thumbnailUrl: details.thumbnail,
+                            mediaType: 1,
+                            previewType: 0,
+                            renderLargerThumbnail: false,
+                            mediaUrl: details.link,
+                            sourceUrl: videoURL,
+                        },
+                    },
+                };
+
+                await keila.sendMessage(m.chat, doc, { quoted: m });
+                m.react('✅');
+                success = true;
+                break;
+            }
+        }
+
+        if (!success) {
+            m.keila("Unable to download video. Please try another link or check the URL.");
+            m.react('❌');
+        }
+    } catch (error) {
+        m.reply(`Error: ${error.message}`);
+        m.react('❗');
+    }
+}
+break;
 case "spotify":
 {
     if (!text) {
@@ -7230,7 +7832,7 @@ case "spotify":
 
     m.loading();
 
-    const spotify = new Spotify();
+    //const spotify = new Spotify();
 
     try {
         const url = text;
@@ -7240,16 +7842,16 @@ case "spotify":
             return m.reply("Invalid Spotify URL");
         }
 
-        const details = await spotify.getDetails(url);
-        const downloadLink = await spotify.download(url);
+        
+        const down = await spotify(url);
 
-        const response = await axios.get(downloadLink, { responseType: 'arraybuffer' });
-        const audioBuffer = Buffer.from(response.data, 'binary');
+        //const response = await axios.get(downloadLink, { responseType: 'arraybuffer' });
+        //const audioBuffer = Buffer.from(response.data, 'binary');
 
         const docs = {
-            audio: audioBuffer,
+            audio: { url: down.data.url },
             mimetype: 'audio/mp4',
-            fileName: details.title,
+            fileName: down.data.title,
             contextInfo: {
                 mentionedJid: [
                     m.sender
@@ -7257,14 +7859,14 @@ case "spotify":
                 forwardingScore: 10,
                 isForwarded: true,
                 externalAdReply: {
-                    title: details.title,
-                    body: `Artist: ${details.artist}\nRelease Date: ${details.date}`,
+                    title: down.data.title,
+                    body: `Artist: ${down.data.artist.name}\nRelease Duration: ${down.data.duration}`,
                     showAdAttribution: true,
-                    thumbnailUrl: details.thumbnail,
+                    thumbnailUrl: down.data.thumbnail,
                     mediaType: 1,
                     previewType: 0,
                     renderLargerThumbnail: false,
-                    mediaUrl: downloadLink,
+                    mediaUrl: down.data.preview,
                     sourceUrl: url,
                 },
             },
@@ -7596,8 +8198,8 @@ break;
     }
 }
 break;
+case "pixivn": {
 
-			case 'pixivn': {
     if (!text) return keila.sendMessage(m.chat, "Silakan berikan kueri pencarian.", m);
 
     const textParts = text.split(" ");
@@ -7625,6 +8227,10 @@ break;
         return imageMessage;
     }
 
+    function modifyURL(url) {
+        return url.replace("i.pximg.net", "i.pixiv.re");
+    }
+
     try {
         const axios = require('axios');
         const res = await axios.get(`https://keilapixiv.vercel.app/search?q=${encodeURIComponent(query)}`);
@@ -7639,7 +8245,7 @@ break;
                 m.chat,
                 {
                     image: {
-                        url: selectedResult.origin_url,
+                        url: modifyURL(selectedResult.origin_url),
                     },
                     caption: selectedResult.title,
                 },
@@ -7657,7 +8263,7 @@ break;
 
             shuffleArray(results);
             const images = results.slice(0, count).map(item => ({
-                url: item.origin_url,
+                url: modifyURL(item.origin_url),
                 caption: item.title
             }));
 
@@ -8047,7 +8653,8 @@ case "nhentai":
 					);
 				}
 				break;
-			case "ig2":
+			case "ig3":
+			case "instagram3":
 {
     if (!text) {
         return m.keila(`Example: ${prefix + command} video_url`);
@@ -8107,8 +8714,8 @@ case "nhentai":
     }
 }
 break;
-case "ig":
-case "instagram":
+case "ig2":
+case "instagram2":
 {
     if (!text) {
         return m.keila(`Example: ${prefix + command} <url>`);
@@ -8171,6 +8778,145 @@ case "instagram":
     }
 }
 break;
+case "ig":
+case "instagram":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} <url>`);
+    }
+
+    try {
+        const args = text.split(' ');
+        const flag = args.length > 1 && args[0].toLowerCase() === 'a';
+        const videoURL = flag ? args[1] : args[0];
+
+        const response = await instagramDownload(videoURL);
+
+        if (!response.status || !response.result.length) {
+            return m.keila("Gagal mendapatkan media. Pastikan URL valid.");
+        }
+
+        const sentUrls = new Set();
+
+        if (flag) {
+            for (const media of response.result) {
+                if (!sentUrls.has(media.link)) {
+                    const isVideo = media.type === 'video';
+                    const doc = {
+                        [isVideo ? 'video' : 'image']: { url: media.link },
+                        mimetype: isVideo ? 'video/mp4' : 'image/jpeg',
+                        fileName: 'instagram'
+                    };
+
+                    await keila.sendMessage(m.chat, doc, { quoted: m });
+                    sentUrls.add(media.link);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+        } else {
+            const media = response.result[0];
+            const isVideo = media.type === 'video';
+            const doc = {
+                [isVideo ? 'video' : 'image']: { url: media.link },
+                caption: `Source: ${videoURL}`,
+                mimetype: isVideo ? 'video/mp4' : 'image/jpeg',
+                fileName: 'instagram',
+                contextInfo: {
+                    mentionedJid: [m.sender],
+                    forwardingScore: 10,
+                    isForwarded: true,
+                    externalAdReply: {
+                        title: 'Instagram DL',
+                        body: `KeiLaSenpai`,
+                        showAdAttribution: true,
+                        thumbnailUrl: media.type === 'image' ? media.link : null,
+                        mediaType: 0,
+                        previewType: 0,
+                        mediaUrl: media.link,
+                        sourceUrl: videoURL
+                    },
+                },
+            };
+
+            await keila.sendMessage(m.chat, doc, { quoted: m });
+        }
+
+    } catch (error) {
+        m.keila(`Error: ${error.message}`);
+    }
+}
+break;
+case "ig1":
+case "instagram1":
+case "ig":
+case "instagram":
+{
+    if (!text) {
+        return m.keila(`Example: ${prefix + command} <url>`);
+    }
+
+    try {
+        const args = text.split(' ');
+        const flag = args.length > 1 && args[0].toLowerCase() === 'a';
+        const videoURL = flag ? args[1] : args[0];
+
+        const response = await instagramDownload(videoURL);
+
+        if (!response.status || !response.result.length) {
+            return m.keila("Gagal mendapatkan media. Pastikan URL valid.");
+        }
+
+        const sentUrls = new Set();
+
+        if (flag) {
+            for (const media of response.result) {
+                if (!sentUrls.has(media.link)) {
+                    const isVideo = media.type === 'video';
+                    const doc = {
+                        [isVideo ? 'video' : 'image']: { url: media.link },
+                        mimetype: isVideo ? 'video/mp4' : 'image/jpeg',
+                        fileName: 'instagram'
+                    };
+
+                    await keila.sendMessage(m.chat, doc, { quoted: m });
+                    sentUrls.add(media.link);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+        } else {
+            const media = response.result[0];
+            const isVideo = media.type === 'video';
+            const doc = {
+                [isVideo ? 'video' : 'image']: { url: media.link },
+                caption: `Source: ${videoURL}`,
+                mimetype: isVideo ? 'video/mp4' : 'image/jpeg',
+                fileName: 'instagram',
+                contextInfo: {
+                    mentionedJid: [m.sender],
+                    forwardingScore: 10,
+                    isForwarded: true,
+                    externalAdReply: {
+                        title: 'Instagram DL',
+                        body: `KeiLaSenpai`,
+                        showAdAttribution: true,
+                        thumbnailUrl: media.type === 'image' ? media.link : null,
+                        mediaType: 0,
+                        previewType: 0,
+                        mediaUrl: media.link,
+                        sourceUrl: videoURL
+                    },
+                },
+            };
+
+            await keila.sendMessage(m.chat, doc, { quoted: m });
+        }
+
+    } catch (error) {
+        m.keila(`Error: ${error.message}`);
+    }
+}
+break;
+
 			case "instag":
 {
     if (!text) {
@@ -8275,7 +9021,7 @@ break;
     }
     const keilaDB = loadKeilaDB();
     
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
+    if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
       return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .ttsearch`);
     };
 
@@ -8367,12 +9113,12 @@ break;
 case "ttm":
 {
     if (!text) {
-        return m.keila(`Example: ${prefix + command} Hutao Edit`);
+        return m.keila(`Example: ${prefix + command} url`);
     }
     const keilaDB = loadKeilaDB();
     
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .playaudio / .playvideo`);
+    if (!keilaDB[m.sender] || !keilaDB[m.sender].statusbt || keilaDB[m.sender].statusbt === false) {
+      return m.keila(`Maaf Fitur Ini Khusus Button On!\n\nGunakan: .tt / .tiktokhd / .tiktokmp3 / .tiktokmp4`);
     };
 
     m.loading();
@@ -9124,9 +9870,7 @@ break;
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await keila.sendMessage(m.chat, { video: { url: mediaUrl }, caption: `Obtained:\n${obtainedItems}\n\nSisa Primogems: ${remainingPrimogems}`}, { quoted: fkontak });
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -9134,6 +9878,8 @@ break;
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await keila.sendMessage(m.chat, { video: { url: mediaUrl }, caption: `Obtained:\n${obtainedItems}\n\nSisa Primogems: ${remainingPrimogems}`}, { quoted: fkontak });
     }
 }
 break;
@@ -9241,9 +9987,7 @@ case "wishhistory": {
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await keila.sendMessage(m.chat, { image: { url: 'https://files.catbox.moe/qtq0gg.jpg' }, caption: `\n\nHistory Wish (Page ${page}/${totalPages}):\n\n${historyText}`}, { quoted: fkontak });
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -9251,6 +9995,8 @@ case "wishhistory": {
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await keila.sendMessage(m.chat, { image: { url: 'https://files.catbox.moe/qtq0gg.jpg' }, caption: `\n\nHistory Wish (Page ${page}/${totalPages}):\n\n${historyText}`}, { quoted: fkontak });
     }
 }
 break;
@@ -9346,9 +10092,7 @@ case "wishinventory": {
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await keila.sendMessage(m.chat, { image: { url: 'https://files.catbox.moe/uaes8c.jpg' }, caption: `Page ${page}/${totalPages}\n\n\nCharacter List:\n\n${characterListText || 'Tidak ada karakter di halaman ini.'}\n\nWeapons List:\n\n${weaponListText || 'Tidak ada senjata di halaman ini.'}`}, { quoted: fkontak });
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -9356,6 +10100,8 @@ case "wishinventory": {
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await keila.sendMessage(m.chat, { image: { url: 'https://files.catbox.moe/uaes8c.jpg' }, caption: `Page ${page}/${totalPages}\n\n\nCharacter List:\n\n${characterListText || 'Tidak ada karakter di halaman ini.'}\n\nWeapons List:\n\n${weaponListText || 'Tidak ada senjata di halaman ini.'}`}, { quoted: fkontak });
     }
 }
 break;
@@ -9717,6 +10463,171 @@ case "answer":
     } catch (error) {
         console.error("Terjadi kesalahan saat menghubungi API:", error);
         m.reply("Terjadi kesalahan, coba lagi.");
+    }
+}
+break;
+
+case "ulartangga": {
+    const chatId = m.chat;
+    const gameDataPath = "./database/ulartangga.json";
+    const gameData = JSON.parse(fs.readFileSync(gameDataPath, "utf-8"));
+
+    if (gameData[chatId]) {
+        const room = gameData[chatId];
+        if (room.players.length < 8 && !room.players.includes(m.sender)) {
+            room.players.push(m.sender);
+            room.positions[m.sender] = 1;
+            fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+            m.reply(
+                `Player @${
+                    String(m.sender).split("@")[0]
+                } telah bergabung.\n\nPlayer saat ini:\n${room.players
+                    .map((id, index) => `P${index + 1}: @${String(id).split("@")[0]}`)
+                    .join("\n")}`
+            );
+            if (room.players.length >= 2) {
+                m.reply(
+                    `Permainan dapat dimulai sekarang! Ketik *utlempar* untuk memulai giliran.\nGiliran pertama: @${
+                        String(room.currentTurn).split("@")[0]
+                    }`
+                );
+            }
+        } else if (room.players.includes(m.sender)) {
+            m.reply("Kamu sudah bergabung dalam permainan.");
+        } else {
+            m.reply("Jumlah pemain sudah mencapai maksimal (8 pemain).");
+        }
+    } else {
+        const newGame = new UlarTangga([m.sender]);
+        gameData[chatId] = {
+            players: [m.sender],
+            positions: { [m.sender]: 1 },
+            currentTurn: m.sender
+        };
+        fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+        m.reply(
+            `Permainan dibuat oleh @${
+                String(m.sender).split("@")[0]
+            }. Tunggu hingga pemain lain bergabung (minimal 2 pemain, maksimal 8 pemain).`
+        );
+    }
+}
+break;
+case "utlempar": {
+    const chatId = m.chat;
+    const gameDataPath = "./database/ulartangga.json";
+    const gameData = JSON.parse(fs.readFileSync(gameDataPath, "utf-8"));
+
+    const room = gameData[chatId];
+    if (!room || room.players.length < 2) {
+        return m.reply("Permainan belum dimulai. Minimal 2 pemain dibutuhkan.");
+    }
+
+    if (room.currentTurn !== m.sender) {
+        return m.reply("Bukan giliranmu!");
+    }
+
+    const game = new UlarTangga(room.players);
+    game.positions = room.positions;
+
+    const diceRoll = game.rollDice();
+    const move = game.movePlayer(m.sender, diceRoll);
+
+    room.positions = game.positions;
+    fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+
+    const allPositions = room.players
+        .map((player, index) => `P${index + 1} › @${String(player).split("@")[0]}: ${room.positions[player]}`)
+        .join("\n");
+
+    m.reply(
+        `@${String(m.sender).split("@")[0]} melempar dadu dan mendapat angka ${diceRoll}.\n` +
+            (move.result === "snake"
+                ? `Sayang sekali! Kamu terkena ular ke posisi ${move.position}.`
+                : move.result === "ladder"
+                ? `Selamat! Kamu naik tangga ke posisi ${move.position}.`
+                : `Posisimu sekarang: ${move.position}.`) +
+            `\n\nPosisi Pemain:\n${allPositions}\n\n` +
+            `${game.renderBoard()}\n\n` +
+            `**Tips & Guide Permainan Ular Tangga:**\n` +
+            `1. **utlempar** - Lempar dadu untuk memulai giliran. Setiap pemain harus melempar dadu untuk bergerak maju sesuai angka yang didapatkan.\n` +
+            `2. **utnyerah** - Gunakan perintah ini jika kamu ingin menyerah dan keluar dari permainan.\n` +
+            `3. **utakhiri** - Mengakhiri permainan dan menghapus semua data terkait permainan saat ini.\n\n` +
+            `**Penjelasan Singkat Permainan:**\n` +
+            `- Tujuan permainan adalah mencapai posisi 100.\n` +
+            `- Papan terdiri dari 100 kotak, dan pemain dapat naik tangga untuk melompat ke posisi yang lebih tinggi atau terjatuh ke ular yang akan membawa ke posisi lebih rendah.\n` +
+            `- Setiap pemain akan melempar dadu untuk bergerak. Pemain yang pertama mencapai posisi 100 akan menang.\n\n` +
+            `Untuk bantuan lebih lanjut, ketik *ulartangga* untuk memulai atau *utakhiri* untuk mengakhiri permainan.`
+    );
+
+    if (move.position === 100) {
+        m.reply(
+            `Selamat! @${
+                String(m.sender).split("@")[0]
+            } menang!\nPermainan selesai.`
+        );
+        delete gameData[chatId];
+        fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+        return;
+    }
+
+    const currentIndex = room.players.indexOf(room.currentTurn);
+    room.currentTurn = room.players[(currentIndex + 1) % room.players.length];
+    fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+
+    m.reply(`Giliran: @${String(room.currentTurn).split("@")[0]}`);
+}
+break;
+case "utnyerah": {
+    const chatId = m.chat;
+    const gameDataPath = "./database/ulartangga.json";
+    const gameData = JSON.parse(fs.readFileSync(gameDataPath, "utf-8"));
+
+    const room = gameData[chatId];
+    if (!room) {
+        return m.reply("Tidak ada permainan yang sedang berlangsung.");
+    }
+
+    if (!room.players.includes(m.sender)) {
+        return m.reply("Kamu tidak bergabung dalam permainan.");
+    }
+
+    room.players = room.players.filter(player => player !== m.sender);
+    delete room.positions[m.sender];
+
+    if (room.players.length < 2) {
+        delete gameData[chatId];
+        fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+        return m.reply("Permainan telah berakhir karena pemain tidak mencukupi.");
+    }
+
+    room.currentTurn = room.players[0];
+    fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+
+    m.reply(
+        `@${
+            String(m.sender).split("@")[0]
+        } telah menyerah dan keluar dari permainan.\nGiliran selanjutnya: @${
+            String(room.currentTurn).split("@")[0]
+        }.`
+    );
+}
+break;
+case "utakhiri": {
+    const chatId = m.chat;
+    const gameDataPath = "./database/ulartangga.json";
+    const gameData = JSON.parse(fs.readFileSync(gameDataPath, "utf-8"));
+
+    if (!gameData[chatId]) {
+        return m.reply("Tidak ada permainan yang sedang berlangsung.");
+    }
+
+    if (m.isCreator || m.isAdmin || gameData[chatId].players.includes(m.sender)) {
+        delete gameData[chatId];
+        fs.writeFileSync(gameDataPath, JSON.stringify(gameData, null, 2));
+        m.reply("Permainan telah diakhiri.");
+    } else {
+        m.reply("Hanya pembuat atau admin yang dapat mengakhiri permainan.");
     }
 }
 break;
@@ -10342,15 +11253,15 @@ case "quiz": {
     }
 
     const selectedMode = text.toLowerCase();
-    const GPT4js = await getGPT4js();
+    /*const GPT4js = await getGPT4js();
 
     const options = {
         provider: 'Aryahcr',
         model: 'gpt-4'
-    };
+    };*/
 
     try {
-        const provider = await GPT4js.createProvider(options.provider);
+        /*const provider = await GPT4js.createProvider(options.provider);
         const messages = [
             { 
                 role: "system", 
@@ -10365,9 +11276,43 @@ case "quiz": {
             }
         ];
 
-        const responseText = await provider.chatCompletion(messages, options);
-        const jsonMatch = responseText.match(/{.*}/s);
-        const quizData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        const responseText = await provider.chatCompletion(messages, options);*/
+        const kuisnya = `Buatkan 1 JSON Quiz Acak dengan Jawaban Singkat yang berisi soal, clue (minimal 3 dan maksimal 5), dan jawaban tentang ${selectedMode} yang jarang diketahui.
+Contoh JSON:
+{
+  "soal": "Kapan Indonesia merdeka?",
+  "clue": ["Bulan Agustus", "Bom Atom Amerika", "Tahun 1945"],
+  "jawaban": "17 Agustus 1945"
+}
+
+Note: Jawaban harus singkat, maksimal 2 kata. Clue jangan langsung memberikan jawabannya. JSON harus dalam bentuk yang rapi, tanpa ada tambahan lainnya!`;
+
+        //const responseText = await axios(`https://widipe.com/gpt4?text=${kuisnya}`);
+        let responseText = await gpt.v1({
+        messages: [
+            {
+                role: "assistant",
+                content: "Hello! How are you today?"
+            },
+            {
+                role: "user",
+                content: `Hello, my name is ${m.pushName}.`
+            },
+            {
+                role: "assistant",
+                content: "Hello, How are you today?"
+            }
+        ],
+        prompt: kuisnya,
+        model: "GPT-4",
+        markdown: false
+    });
+        console.log(responseText.data);
+        const responseQuiz = responseText.gpt.match(/{.*}/s);
+        const quizData = responseText.gpt ? JSON.parse(responseQuiz[0]) : null;
+        
+        //const jsonMatch = responseText.match(/{.*}/s);
+        //const quizData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
 
         if (!quizData || !quizData.soal || !quizData.clue || !quizData.jawaban) {
             return m.reply('Respon AI tidak valid atau tidak sesuai format JSON.');
@@ -10478,7 +11423,583 @@ case "gip":
   }
 }
 break;
+case "build":
+    {
+        const args = text.split(' ');
+        const subCommand = args[0];
+        const subArgs = args.slice(1);
+        const dbPath = './database/gib.json';
 
+        if (!fs.existsSync(dbPath)) {
+            m.keila('Database tidak ditemukan!');
+            break;
+        }
+
+        const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+
+        if (!subCommand) {
+            const text = 'Format Salah! \n\nExample:\n.build gi zhongli\n.build list gi';
+            m.keila(text);
+            break;
+        }
+
+        if (subCommand === "gi") {
+            if (subArgs.length === 0) {
+                const text = 'Format Salah! \n\nExample:\n.build gi zhongli';
+                m.keila(text);
+                break;
+            }
+
+            const characterName = subArgs[0].toLowerCase();
+
+            if (db.gi[characterName]) {
+                const builds = db.gi[characterName];
+
+                for (const build of builds) {
+                    const text = `${characterName.toUpperCase()} - ${build.tipe}`;
+                    await m.smedia('image', build.url, text);
+                }
+            } else {
+                const text = 'Karakter tidak ditemukan atau belum ada datanya.';
+                m.keila(text);
+            }
+        }
+
+        else if (subCommand === "list") {
+            if (subArgs.length === 0) {
+                const text = 'Format Salah! \n\nExample:\n.build list gi';
+                m.keila(text);
+                break;
+            }
+
+            const listType = subArgs[0].toLowerCase();
+
+            if (listType === "gi") {
+                const giCharacters = Object.keys(db.gi).map(character => character.charAt(0).toUpperCase() + character.slice(1));
+                const listText = `*List Genshin Character:*\n\n- ${giCharacters.join('\n- ')}`;
+
+                m.keila(listText);
+            } else {
+                const text = 'List tipe tidak valid. Gunakan "gi".';
+                m.keila(text);
+            }
+        } else {
+            const text = 'Subcommand tidak valid.';
+            m.keila(text);
+        }
+    }
+    break;
+
+case "wikigi": {
+    if (!args[0] || !args[1]) 
+        return m.keila(`Format Salah! \n\nTipe yang tersedia:
+- char: karakter
+- wp: Senjata
+- tl: Talenta Karakter
+- cons: Konstelasi karakter
+- mat: Material
+- arte: Artefak
+- food: Makanan
+- dom: Domain
+- ene: Musuh/Monster
+- geo: Area/Lokasi
+- anim: hewan
+- name: Namecard
+- skin
+- glider
+
+Example:
+  - ${prefix + command} char <nama_karakter>
+  - ${prefix + command} wp <nama_senjata>
+  - ${prefix + command} tl <nama_karakter>
+  - ${prefix + command} cons <nama_karakter>
+  - ${prefix + command} mat <nama_material>
+  - ${prefix + command} arte <nama_artefak>
+    `);
+
+    const type = args[0].toLowerCase();
+    let itemName;
+    let text = '';
+    const resultLanguage = 'ID'; // Bahasa Indonesia sebagai default
+
+    if (type === 'char' || type === 'geo' || type === 'anim' || type === 'name' || type === 'skin' || type === 'glider' || type === 'ene' || type === 'dom' || type === 'food' || type === 'wp' || type === 'tl' || type === 'cons' || type === 'mat' || type === 'arte') {
+        itemName = args.slice(type === 'char' ? 1 : type === 'wp' ? 2 : 1).join(" ").toLowerCase();
+    }
+
+    // Handle character
+    if (type === 'char') {
+        const character = genshindb.characters(itemName, { resultLanguage });
+        if (!character) return m.keila("Karakter tidak ditemukan.");
+        const text = `
+Identitas:
+  › Nama: ${character.name}
+  › Judul: ${character.title}
+${args[1] === 'a' ? `  › Gender: ${character.gender}\n  › Afiliansi: ${character.affiliation}` : ""}
+    
+Info:
+  › ${character.description}
+  › Rarity: ${"★".repeat(character.rarity)} Stars
+  › Elemen: ${character.elementText}
+  › Senjata: ${character.weaponText}
+  › Wilayah: ${character.region || "Tidak diketahui"}
+  › Ulang Tahun: ${character.birthday || "Tidak diketahui"}
+
+Lainnya:
+   » Ascend:
+${Object.entries(character.costs).map(([key, items]) => `         • ${key.charAt(0).toUpperCase() + key.slice(1)}\n${items.map(item => `               › ${item.name}: ${item.count}`).join("\n")}`).join("\n")}
+   » Stats:
+         • Substat Prioritas: ${character.substatText}
+         
+CV:
+  › EN: ${character.cv.english || "Tidak diketahui"}
+  › CN: ${character.cv.chinese || "Tidak diketahui"}
+  › JP: ${character.cv.japanese || "Tidak diketahui"}
+  › KR: ${character.cv.korean || "Tidak diketahui"}
+`;
+
+        await m.smedia('image', character.images.cover1, text);
+    }
+
+    // Handle weapon
+    if (type === 'wp') {
+        const weapon = genshindb.weapons(itemName, { resultLanguage });
+        if (!weapon) return m.keila("Senjata tidak ditemukan.");
+        const text = `
+Identitas:
+  › Nama: ${weapon.name}
+  › Tipe: ${weapon.weaponText}
+    
+Info:
+  › ${weapon.description}
+  › Rarity: ${"★".repeat(weapon.rarity)} Stars
+  › Base ATK: ${weapon.baseAtkValue.toFixed(2)}
+  › Main Stat: ${weapon.mainStatText} (${weapon.baseStatText})
+  › Efek: ${weapon.effectName}
+
+Lainnya:
+   » Ascend:
+${Object.entries(weapon.costs).map(([key, items]) => `         • ${key.charAt(0).toUpperCase() + key.slice(1)}\n${items.map(item => `               › ${item.name}: ${item.count}`).join("\n")}`).join("\n")}
+   » Stats:
+         • Main Stat: ${weapon.mainStatText}
+         • Base ATK: ${weapon.baseAtkValue.toFixed(2)}
+
+Refine:
+  › R1: ${weapon.r1.description}
+  › R2: ${weapon.r2.description}
+  › R3: ${weapon.r3.description}
+  › R4: ${weapon.r4.description}
+  › R5: ${weapon.r5.description}
+`;
+        await m.smedia('image', weapon.images.mihoyo_icon, text);
+    }
+
+    // Handle talent
+    if (type === 'tl') {
+        const talent = genshindb.talents(itemName, { resultLanguage });
+        if (!talent) return m.keila("Talenta tidak ditemukan.");
+        const text = `
+Identitas:
+  › Nama: ${talent.name}
+    
+Info:
+  › ${talent.combat1.description}
+
+Mekanisme:
+  › Normal Attack: ${talent.combat1.name}
+  › Charged Attack: ${talent.combat2.name}
+  › Plunging Attack: ${talent.combat3.name}
+
+Pasif Talenta:
+  › 1. ${talent.passive1.name} - ${talent.passive1.description}
+  › 2. ${talent.passive2.name} - ${talent.passive2.description}
+  › 3. ${talent.passive3.name} - ${talent.passive3.description}
+
+Lainnya:
+   » Ascend:
+${Object.entries(talent.costs).map(([key, items]) => `         • ${key.charAt(0).toUpperCase() + key.slice(1)}\n${items.map(item => `               › ${item.name}: ${item.count}`).join("\n")}`).join("\n")}
+   » Stats:
+         • Combat Stats: ${talent.combat1.attributes.labels.join(', ')}
+         • Passive Stats: ${talent.passive1.description}
+`;
+        await m.keila(text);
+    }
+
+    // Handle constellation
+    if (type === 'cons') {
+        const constellation = genshindb.constellations(itemName, { resultLanguage });
+        if (!constellation) return m.keila("Konstelasi tidak ditemukan.");
+        const text = `
+Identitas:
+  › Nama: ${constellation.name}
+    
+Konstelasi:
+  › C1: ${constellation.c1.name} - ${constellation.c1.description}
+  › C2: ${constellation.c2.name} - ${constellation.c2.description}
+  › C3: ${constellation.c3.name} - ${constellation.c3.description}
+  › C4: ${constellation.c4.name} - ${constellation.c4.description}
+  › C5: ${constellation.c5.name} - ${constellation.c5.description}
+  › C6: ${constellation.c6.name} - ${constellation.c6.description}
+`;
+
+        await m.keila(text);
+    }
+
+    // Handle material
+    if (type === 'mat') {
+        const material = genshindb.materials(itemName, { resultLanguage });
+        if (!material) return m.keila("Material tidak ditemukan.");
+        const text = `
+Identitas:
+  › Nama: ${material.name}
+  › Rarity: ${"★".repeat(material.rarity)} Stars
+  › Kategori: ${material.category}
+  › Tipe: ${material.typeText}
+    
+Info:
+  › ${material.description}
+
+Lainnya:
+  › Domain Tempat Ditemukan: ${material.dropDomainName || "Tidak diketahui"}
+  › Hari Ditemukan: ${material.daysOfWeek || "Tidak Diketahui"}
+`;
+
+        await m.keila(text);
+    }
+    
+    if (type === 'food') {
+  const foods = genshindb.foods(itemName, { resultLanguage });
+
+  if (!foods) return m.keila('Makanan Tidak Ditemukan');
+
+  // Menyiapkan bahan-bahan dengan format dinamis
+  const ingredientsText = foods.ingredients.map(ingredient => {
+    return `  • ${ingredient.name} x${ingredient.count}`;
+  }).join("\n");
+
+  const text = `
+Identitas:
+   › Nama: ${foods.name}
+   › Tipe: ${foods.filterText}
+
+Info:
+   › Deskripsi: 
+      • ${foods.description}
+   › Efek:
+      • ${foods.effect}
+
+Tipe:
+   › Suspicious:
+       • Deskripsi:
+          » ${foods.suspicious.description}
+       • Efek:
+          » ${foods.suspicious.effect}
+   › Normal:
+       • Deskripsi:
+          » ${foods.normal.description}
+       • Efek:
+          » ${foods.normal.effect}
+   › Delicious:
+       • Deskripsi:
+          » ${foods.delicious.description}
+       • Efek:
+          » ${foods.delicious.effect}
+
+Bahan-Bahan:
+${ingredientsText}
+  `;
+  
+  await m.keila(text);
+}
+
+if (type === 'dom') {
+  const domain = genshindb.domains(itemName, { resultLanguage });
+
+  if (!domain) return m.keila('Domain Tidak Ditemukan');
+
+  let recommendedElementsText = '';
+  for (let i = 0; i < domain.recommendedElements.length; i++) {
+    recommendedElementsText += `• ${domain.recommendedElements[i]}\n`;
+  }
+
+  let rewardPreviewText = '';
+  for (let i = 0; i < domain.rewardPreview.length; i++) {
+    const reward = domain.rewardPreview[i];
+    if (reward.count) {
+      rewardPreviewText += `• ${reward.name} x${reward.count}\n`;
+    } else {
+      rewardPreviewText += `• ${reward.name}\n`;
+    }
+  }
+
+  let monsterListText = '';
+  for (let i = 0; i < domain.monsterList.length; i++) {
+    monsterListText += `• ${domain.monsterList[i].name}\n`;
+  }
+
+  let disorderText = '';
+  for (let i = 0; i < domain.disorder.length; i++) {
+    disorderText += `${domain.disorder[i]}\n`;
+  }
+
+  let daysAvailableText = '';
+  for (let i = 0; i < domain.daysOfWeek.length; i++) {
+    daysAvailableText += `• ${domain.daysOfWeek[i]}\n`;
+  }
+
+  const text = `
+Identitas:
+   › Nama: ${domain.name}
+   › Tipe: ${domain.domainText}
+   › Lokasi: ${domain.regionName} - ${domain.entranceName}
+
+Info:
+   › Deskripsi: 
+      • ${domain.description}
+   › Level yang Disarankan: ${domain.recommendedLevel}
+   › Elemen yang Disarankan:
+${recommendedElementsText}
+   › Hari yang Tersedia:
+${daysAvailableText}
+   › Unlock Rank: ${domain.unlockRank}
+
+Tantangan:
+${disorderText}
+
+Hadiah:
+${rewardPreviewText}
+
+Musuh:
+${monsterListText}
+  `;
+
+  await m.keila(text);
+}
+
+if (type === 'ene') {
+  const enemy = genshindb.enemies(itemName, { resultLanguage });
+
+  if (!enemy) return m.keila('Enemy Tidak Ditemukan');
+
+  let specialNamesText = '';
+  for (let i = 0; i < enemy.specialNames.length; i++) {
+    specialNamesText += `• ${enemy.specialNames[i]}\n`;
+  }
+
+  let rewardPreviewText = '';
+  for (let i = 0; i < enemy.rewardPreview.length; i++) {
+    const reward = enemy.rewardPreview[i];
+    if (reward.count) {
+      rewardPreviewText += `• ${reward.name} (Drop Rate: ${reward.count})\n`;
+    } else {
+      rewardPreviewText += `• ${reward.name}\n`;
+    }
+  }
+
+  const text = `
+Identitas:
+   › Nama: ${enemy.name}
+   › Tipe: ${enemy.enemyType}
+   › Kategori: ${enemy.categoryText}
+
+Info:
+   › Deskripsi: 
+      • ${enemy.description}
+
+Investigasi:
+   › Nama: ${enemy.investigation.name}
+   › Kategori: ${enemy.investigation.categoryText}
+   › Deskripsi:
+      • ${enemy.investigation.description}
+
+Nama Khusus:
+${specialNamesText}
+
+Hadiah:
+${rewardPreviewText}
+  `;
+
+  await m.keila(text);
+}
+
+if (type === 'geo') {
+  const geography = genshindb.geographies(itemName, { resultLanguage });
+
+  if (!geography) return m.keila('Geografi Tidak Ditemukan');
+
+  const text = `
+Identitas:
+   › Nama: ${geography.name}
+   › Area: ${geography.areaName}
+   › Region: ${geography.regionName}
+   › Versi: ${geography.version || 'Tidak Tersedia'}
+
+Info:
+   › Deskripsi:
+      • ${geography.description}
+  `;
+
+  await m.keila(text);
+}
+
+if (type === 'name') {
+  const namecard = genshindb.namecards(itemName, { resultLanguage });
+
+  if (!namecard) return m.keila('Namecard Tidak Ditemukan');
+
+  let sourceText = '';
+  for (let i = 0; i < namecard.source.length; i++) {
+    sourceText += `• ${namecard.source[i]}\n`;
+  }
+
+  const text = `
+Identitas:
+   › Nama: ${namecard.name}
+   › Versi: ${namecard.version || 'Tidak Tersedia'}
+
+Info:
+   › Deskripsi:
+      • ${namecard.description}
+
+Sumber:
+${sourceText || 'Tidak ada informasi sumber.'}
+  `;
+
+  await m.keila(text);
+}
+
+if (type === 'anim') {
+  const animal = genshindb.animals(itemName, { resultLanguage });
+
+  if (!animal) return m.keila('Hewan Tidak Ditemukan');
+
+  const text = `
+Identitas:
+   › Nama: ${animal.name}
+   › Kategori: ${animal.categoryText}
+   › Versi: ${animal.version}
+
+Info:
+   › Deskripsi:
+      • ${animal.description}
+  `;
+
+  await m.keila(text);
+}
+
+if (type === 'glider') {
+  const glider = genshindb.windgliders(itemName, { resultLanguage });
+
+  if (!glider) return m.keila('Wind Glider Tidak Ditemukan');
+
+  let sourceText = '';
+  for (let i = 0; i < glider.source.length; i++) {
+    sourceText += `• ${glider.source[i]}\n`;
+  }
+
+  const text = `
+Identitas:
+   › Nama: ${glider.name}
+   › Rarity: ${glider.rarity}★
+   › Versi: ${glider.version}
+
+Info:
+   › Deskripsi:
+      • ${glider.description}
+   › Kisah:
+      • ${glider.story}
+
+Sumber:
+${sourceText || 'Tidak ada informasi sumber.'}
+  `;
+
+  await m.keila(text);
+}
+
+if (type === 'skin') {
+  const outfit = genshindb.outfits(itemName, { resultLanguage });
+
+  if (!outfit) return m.keila('Skin Tidak Ditemukan');
+
+  let sourceText = '';
+  for (let i = 0; i < outfit.source.length; i++) {
+    sourceText += `• ${outfit.source[i]}\n`;
+  }
+
+  const text = `
+Identitas:
+   › Nama: ${outfit.name}
+   › Karakter: ${outfit.characterName}
+   › Versi: ${outfit.version}
+   › Default: ${outfit.isDefault ? 'Ya' : 'Tidak'}
+
+Info:
+   › Deskripsi: 
+      • ${outfit.description}
+
+Sumber:
+${sourceText || 'Tidak ada informasi sumber.'}
+  `;
+
+  await m.keila(text);
+}
+
+    // Handle artifacts
+    if (type === 'arte') {
+    const artefacts = genshindb.artifacts(itemName, { resultLanguage });
+
+    if (!artefacts) return m.keila("Artefak tidak ditemukan.");
+
+    // Mendapatkan data artefak
+    const flower = artefacts.flower;
+    const plume = artefacts.plume;
+    const sands = artefacts.sands;
+    const goblet = artefacts.goblet;
+    const circlet = artefacts.circlet;
+
+    let allArtifacts = `
+Identitas:
+   › Name: ${flower.name}
+   
+Set:
+   • 2-set: ${flower.effect2Pc}
+   • 4-set: ${flower.effect4Pc}
+
+Tipe:
+   › Flower: 
+       • Name: ${flower.name}
+       • Type: ${flower.relicText}
+       • Description: ${flower.description}
+       • Lore: ${flower.story}
+
+   › Plume:
+       • Name: ${plume.name}
+       • Type: ${plume.relicText}
+       • Description: ${plume.description}
+       • Lore: ${plume.story}
+
+   › Sands:
+       • Name: ${sands.name}
+       • Type: ${sands.relicText}
+       • Description: ${sands.description}
+       • Lore: ${sands.story}
+
+   › Goblet:
+       • Name: ${goblet.name}
+       • Type: ${goblet.relicText}
+       • Description: ${goblet.description}
+       • Lore: ${goblet.story}
+
+   › Circlet:
+       • Name: ${circlet.name}
+       • Type: ${circlet.relicText}
+       • Description: ${circlet.description}
+       • Lore: ${circlet.story}
+    `;
+
+    await m.keila(allArtifacts);
+}
+}
+break;
 			// Menu
 case "allmenu":
 {
@@ -10534,7 +12055,8 @@ ${readmore}
    ${setv},    sendach
    ${setv},    sendvch
    ${setv},    totalfitur
-   ${setv},    nobutton (on/off)
+   ${setv},    button (on/off)
+   ${setv},    store
 
  
 *✾* ┬─────「 \`\`\`Grup\`\`\` 」 °\` ※,
@@ -10566,6 +12088,10 @@ ${readmore}
 
    ${setv},    play (query)
    ${setv},    play2 (query)
+   ${setv},    play3 (query)
+   ${setv},    playvideo (query)
+   ${setv},    playvideo2 (query)
+   ${setv},    playvideo3 (query)
    ${setv},    tplay (query)
    ${setv},    splay (query)
    ${setv},    pixiv (query)
@@ -10578,14 +12104,20 @@ ${readmore}
  
 *✾* ┬─────「 \`\`\`Download\`\`\` 」 °\` ※,
 
-   ${setv},    ytmp3 (url)
-   ${setv},    ytmp4 (url)
+   ${setv},    yta (url)
+   ${setv},    ytv (url)
    ${setv},    yta2 (url)
    ${setv},    ytv2 (url)
+   ${setv},    yta3 (url)
+   ${setv},    ytv3 (url)
    ${setv},    spotify (url)
    ${setv},    spotifylirik (url)
    ${setv},    instagram (url)
+   ${setv},    ttm (url)
    ${setv},    tiktok (url)
+   ${setv},    tiktokmp4 (url)
+   ${setv},    tiktokmp3 (url)
+   ${setv},    tiktokhd (url)
    ${setv},    facebook (url)
    ${setv},    gitrepo (url)
    ${setv},    mediafire (url)
@@ -10654,6 +12186,13 @@ ${readmore}
    ${setv},    wish
    ${setv},    wishinv
    ${setv},    wishhst
+   
+   
+*❖* ┬─────「 \`\`\`Hoyoverse\`\`\` 」 °\` ※,
+
+   ${setv},    enka
+   ${setv},    wikigi
+   ${setv},    build
 
  
 *✾* ┬─────「 \`\`\`Fun\`\`\` 」 °\` ※,
@@ -10695,6 +12234,8 @@ ${readmore}
    ${setv},    sendsw
    ${setv},    crc
    ${setv},    addgems
+   ${setv},    addstore
+   ${setv},    dellstore
    ${setv},    $
    ${setv},    >
    ${setv},    <
@@ -10750,9 +12291,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -10760,9 +12299,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "botmenu":
@@ -10819,7 +12360,8 @@ ${readmore}
    ${setv},    sendach
    ${setv},    sendvch
    ${setv},    totalfitur
-   ${setv},    nobutton (on/off)
+   ${setv},    button (on/off)
+   ${setv},    store
 
 
 \`\`\`Bot Masih Dalam Tahap Pengembangan!\`\`\`
@@ -10872,9 +12414,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -10882,9 +12422,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "groupmenu":
@@ -10991,9 +12533,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11001,9 +12541,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "searchmenu":
@@ -11037,6 +12579,10 @@ ${readmore}
 
    ${setv},    play (query)
    ${setv},    play2 (query)
+   ${setv},    play3 (query)
+   ${setv},    playvideo (query)
+   ${setv},    playvideo2 (query)
+   ${setv},    playvideo3 (query)
    ${setv},    tplay (query)
    ${setv},    splay (query)
    ${setv},    pixiv (query)
@@ -11097,9 +12643,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11107,9 +12651,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "downloadmenu":
@@ -11141,14 +12687,20 @@ ${readmore}
  
 *❖* ┬─────「 \`\`\`Downloader\`\`\` 」 °\` ※,
 
-   ${setv},    ytmp3 (url)
-   ${setv},    ytmp4 (url)
+   ${setv},    yta (url)
+   ${setv},    yta (url)
    ${setv},    yta2 (url)
    ${setv},    ytv2 (url)
+   ${setv},    yta3 (url)
+   ${setv},    ytv3 (url)
    ${setv},    spotify (url)
    ${setv},    spotifylirik (url)
    ${setv},    instagram (url)
+   ${setv},    ttm (url)
    ${setv},    tiktok (url)
+   ${setv},    tiktokmp4 (url)
+   ${setv},    tiktokmp3 (url)
+   ${setv},    tiktokhd (url)
    ${setv},    facebook (url)
    ${setv},    gitrepo (url)
    ${setv},    mediafire (url)
@@ -11206,9 +12758,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11216,9 +12766,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "toolsmenu":
@@ -11328,9 +12880,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11338,9 +12888,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "aimenu":
@@ -11435,9 +12987,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11445,9 +12995,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "gamemenu":
@@ -11543,9 +13095,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11553,9 +13103,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "funmenu":
@@ -11653,9 +13205,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11663,9 +13213,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 case "ownermenu":
@@ -11716,6 +13268,8 @@ ${readmore}
    ${setv},    sendsw
    ${setv},    crc
    ${setv},    addgems
+   ${setv},    addstore
+   ${setv},    dellstore
    ${setv},    $
    ${setv},    >
    ${setv},    <
@@ -11771,9 +13325,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, teks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -11781,90 +13333,112 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
+case "hoyomenu":
+{
+    const userId = m.sender;
+    const keilaDB = loadKeilaDB();
+    const jodohData = keilaDB[userId];
+    const setv = pickRandom(global.listv);
+    let database = JSON.parse(fs.readFileSync("./database/database.json", "utf8"));
+    
+    let teks = `${ucapanWktu} ${m.pushName ? m.pushName : "Kak"}!
+Silahkan Gunakan Aku Dengan Bijak Ya kak!
+    
+*▩* ─────「 \`\`\`Info Bot\`\`\` 」 °\` ※,
 
-			case "hoyomenu":
-				{
-					const userId = m.sender;
-					const user = global.db.users[userId];
-					let database = JSON.parse(
-						fs.readFileSync("./database/database.json", "utf8"),
-					);
-					const userLanguage = database.users[userId]
-						? database.users[userId].language
-						: "EN";
+   ${setv} › Nama : ${global.botname}
+   ${setv} › Creator : @${"6289646942000@s.whatsapp.net".split("@")[0]}
+   ${setv} › Owner : @${global.owner[0].split("@")[0]}
+  
+*▩* ─────「 \`\`\`Info User\`\`\` 」 °\` ※,
 
-					let profile;
-					try {
-						profile = await keila.profilePictureUrl(
-							m.sender,
-							"image",
-						);
-					} catch (e) {
-						profile = global.fake.anonim;
-					}
-					const setv = pickRandom(global.listv);
-					const userInfo = getUserInfo(
-						m,
-						user,
-						isVip,
-						isPremium,
-						userLanguage,
-					);
-					const botInfo = getBotInfo(userLanguage);
-					const about = getAbout(tanggal, hari, jam, userLanguage);
+   ${setv} › Nama : ${m.pushName ? m.pushName : "Si Misterius"}
+   ${setv} › Jodoh : ${(jodohData && jodohData.jodoh) ? `@${jodohData.jodoh.split('@')[0]}` : "Belum Berjodoh"}
+   ${setv} › Stamina : ${isVip ? "Developer" : global.db.users[m.sender].limit}
+   ${setv} › Primogems : ${global.db.users[m.sender] ? global.db.users[m.sender].uang.toLocaleString("id-ID") : "0"}
 
-					const menunya = `${userInfo}${botInfo}${about}
-╭──❍「 *HOYOVERSE* 」❍
-│${setv} ${prefix} enka (genshin/hsr) (uid)
-│${setv} ${prefix} build (genshin/hsr) (character)
-│${setv} ${prefix} ascend (genshin/hsr) (character)
-│${setv} ${prefix} wikigenshin
-│${setv} ${prefix} wikihsr
-│${setv} ${prefix} leak (genshin/hsr)
-╰──────❍`;
+\`\`\`Berikut List Menunya!\`\`\`
+${readmore}
 
-					await keila.sendMessage(
-						m.chat,
-						{
-							image: { url: global.fake.menunya },
-							caption: menunya,
-							contextInfo: {
-								mentionedJid: [
-									m.sender
-								],
-								forwardingScore: 10,
-								isForwarded: true,
-								forwardedNewsletterMessageInfo: {
-									newsletterJid: '48459262621@s.whatsapp.net',
-									serverMessageId: null,
-									newsletterName: "Join For More Info",
-								},
-								externalAdReply: {
-									title: global.author,
-									body: global.packname,
-									showAdAttribution: true,
-									thumbnailUrl: profile,
-									mediaType: 1,
-									previewType: 0,
-									renderLargerThumbnail: false,
-									mediaUrl: global.my.gh,
-									sourceUrl: global.my.gh,
-								},
-							},
-						},
-						{
-							quoted: m,
-						},
-					);
-					/*
-					await keila.sendMessage(m.chat, { audio: 'https://f.uguu.se/iHKlnyHj.mp3', mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: m, },); */
-				}
-				break;
+*❖* ┬─────「 \`\`\`Hoyoverse\`\`\` 」 °\` ※,
+
+   ${setv},    enka
+   ${setv},    wikigi
+   ${setv},    build
+   
+
+\`\`\`Bot Masih Dalam Tahap Pengembangan!\`\`\`
+    `;
+    
+    let buttonOptions = [
+        {
+            name: "quick_reply",
+            buttonParamsJson: '{"display_text":"Skrip","id":".script"}',
+        },
+        {
+            name: "cta_url",
+            buttonParamsJson: '{"display_text":"「 YouTube 」","url":"https://youtube.com/@KeiLaSenpai","merchant_url":"https://www.google.com"}',
+        },
+    ];
+    let thumbMenu = global.fake.menunya;
+    let msg = generateWAMessageFromContent(m.chat, {
+        viewOnceMessage: {
+            message: {
+                messageContextInfo: {
+                    deviceListMetadata: {},
+                    deviceListMetadataVersion: 2
+                },
+                interactiveMessage: proto.Message.InteractiveMessage.create({
+                    contextInfo: {
+                        mentionedJid: [m.sender],
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: global.my.nl,
+                            serverMessageId: 100,
+                            newsletterName: global.mess.ucpnl
+                        },
+                        businessMessageForwardInfo: { businessOwnerJid: keila.decodeJid(keila.user.id) },
+                    },
+                    body: proto.Message.InteractiveMessage.Body.create({
+                        text: `${teks}`
+                    }),
+                    footer: proto.Message.InteractiveMessage.Footer.create({
+                        text: ucapanWaktu
+                    }),
+                    header: proto.Message.InteractiveMessage.Header.create({
+                        subtitle: "KeiLaSenpai",
+                        hasMediaAttachment: true, ...(await prepareWAMessageMedia({ image: { url: thumbMenu } }, { upload: keila.waUploadToServer }))
+                    }),
+                    nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                        buttons: buttonOptions
+                    })
+                })
+            }
+        }
+    }, {});
+
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
+      await keila.relayMessage(msg.key.remoteJid, msg.message, {
+        messageId: msg.key.id
+      }).then(response => {
+        console.log("Message sent successfully", response);
+      }).catch(error => {
+        console.error("Error sending message", error);
+      });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, teks);
+    };
+    const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+}
+break;
 case "menu":
 {
     const userId = m.sender;
@@ -12051,9 +13625,7 @@ ${readmore}
         }
     }, {});
 
-    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === false) {
-      await m.smedia('gvideo', global.fake.menuvid, tks);
-    } else {
+    if (keilaDB[m.sender] && keilaDB[m.sender].statusbt === true) {
       await keila.relayMessage(msg.key.remoteJid, msg.message, {
         messageId: msg.key.id
       }).then(response => {
@@ -12061,9 +13633,11 @@ ${readmore}
       }).catch(error => {
         console.error("Error sending message", error);
       });
+    } else {
+      await m.smedia('gvideo', global.fake.menuvid, tks);
     };
     const audioMj = fs.readFileSync('./src/media/keilaYa.opus');
-    await keila.sendMessage(m.chat, { audio: audioMj, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
+    await keila.sendMessage(m.chat, { audio: { url: global.fake.menuaud }, mimetype: "audio/ogg; codecs=opus", ptt: true, }, {	quoted: fkontak, },)
 }
 break;
 

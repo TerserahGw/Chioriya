@@ -17,6 +17,7 @@ global.fake = {
 	listfakedocs: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.openxmlformats-officedocument.presentationml.presentation','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/pdf'],
 	menunya: 'https://files.catbox.moe/5ie0yi.jpg',
 	menuvid: 'https://files.catbox.moe/5u7ry0.mp4',
+	menuaud: 'https://files.catbox.moe/2ib9e7.opus',
 }
 
 global.my = {
@@ -76,6 +77,7 @@ global.game = {
 	kuismath: {},
 	kuisquiz: {},
 	tebakbom: {},
+     ulartangga: {},
 }
 
 global.APIs = {

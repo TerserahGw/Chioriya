@@ -706,42 +706,134 @@ async function Serialize(keila, m, store) {
         }
     };
     
+    m.smedia = async (type, url, text) => {
+    const chatId = m.chat;
+
+    const fkknt = {
+        key: {
+            remoteJid: "0@s.whatsapp.net",
+            participant: "0@s.whatsapp.net",
+            fromMe: false,
+            id: "Keila",
+        },
+        message: {
+            contactMessage: {
+                displayName: m.pushName || global.author,
+                vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;${m.pushName || global.author},;;;\nFN:${m.pushName || global.author}\nitem1.TEL;waid=${m.sender.split("@")[0]}:${m.sender.split("@")[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
+                sendEphemeral: true,
+            },
+        },
+    };
+
+    const contextInfo = {
+        externalAdReply: {
+            title: global.botname,
+            body: global.author,
+            showAdAttribution: true,
+            thumbnailUrl: global.fake.menunya,
+            mediaType: 1,
+            previewType: 0,
+            renderLargerThumbnail: false,
+            mediaUrl: global.fake.menunya,
+            sourceUrl: global.my.wb,
+        },
+        forwardingScore: 10,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: global.my.nl,
+            serverMessageId: 100,
+            newsletterName: global.mess.ucpnl,
+        },
+    };
+
+    let mediaObj = {}; 
+    if (type === 'image') {
+        mediaObj = { image: { url }, caption: text, mimetype: 'image/png', fileName: url.split('/').pop(), contextInfo };
+    } else if (type === 'video') {
+        mediaObj = { video: { url }, caption: text, mimetype: `video/${url.split('.').pop()}`, fileName: url.split('/').pop(), contextInfo };
+    } else if (type === 'gvideo') {
+        mediaObj = { video: { url }, caption: text, mimetype: `video/${url.split('.').pop()}`, fileName: url.split('/').pop(), gifPlayback: true, contextInfo };
+    } else if (type === 'audio') {
+        mediaObj = { audio: { url }, mimetype: `audio/${url.split('.').pop()}`, fileName: url.split('/').pop(), contextInfo };
+    } else {
+        console.log('Error: Tipe media tidak didukung');
+        return;
+    }
+
+    try {
+        let sentMessage = await keila.sendMessage(chatId, mediaObj, { quoted: fkknt });
+        console.log('Pesan berhasil dikirim:', sentMessage);
+    } catch (e) {
+        console.error('Error sending media:', e);
+    }
+};
+
     m.keila = async (pesan) => {
-        const chatId = m.chat;
-        const quoted = m;
+    const chatId = m.chat;
+    const quoted = m;
 
-        const contextInfo = {
-            externalAdReply: {
-                title: global.botname,
-                body: global.author,
-                showAdAttribution: true,
-                thumbnailUrl: global.fake.menunya,
-                mediaType: 1,
-                previewType: 0,
-                renderLargerThumbnail: false,
-                mediaUrl: global.fake.menunya,
-                sourceUrl: global.my.wb,
-            },
-            forwardingScore: 10,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: global.my.nl,
-                serverMessageId: 100,
-                newsletterName: global.mess.ucpnl,
-            },
-        };
+    const mentionMatches = pesan.match(/(\d{10,15})@s\.whatsapp\.net/g);
+    const mentions = mentionMatches || [];
 
-        try {
-            let sentMessage = await keila.sendMessage(chatId, { 
-                text: pesan, 
-                mentions: [], 
-                contextInfo
-            }, { quoted });
-        } catch (e) {
-            console.error('Error sending messages:', e);
-        }
+    const formattedText = mentions.length 
+        ? pesan.replace(/(\d{10,15})@s\.whatsapp\.net/g, '@$1')
+        : pesan;
+
+    const fkknt = {
+        key: {
+            remoteJid: "0@s.whatsapp.net",
+            participant: "0@s.whatsapp.net",
+            fromMe: false,
+            id: "Keila",
+        },
+        message: {
+            contactMessage: {
+                displayName: m.pushName || global.author,
+                vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;${m.pushName || global.author},;;;\nFN:${m.pushName || global.author}\nitem1.TEL;waid=${m.sender.split("@")[0]}:${m.sender.split("@")[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
+                sendEphemeral: true,
+            },
+        },
     };
-    
+
+    const contextInfo = {
+        externalAdReply: {
+            title: global.botname,
+            body: global.author,
+            showAdAttribution: true,
+            thumbnailUrl: global.fake.menunya,
+            mediaType: 1,
+            previewType: 0,
+            renderLargerThumbnail: false,
+            mediaUrl: global.fake.menunya,
+            sourceUrl: global.my.wb,
+        },
+        forwardingScore: 10,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: global.my.nl,
+            serverMessageId: 100,
+            newsletterName: global.mess.ucpnl,
+        },
+    };
+
+    const messageOptions = { 
+        text: formattedText, 
+        mentions: mentions, 
+        contextInfo 
+    };
+    console.log(messageOptions);
+
+    try {
+        await keila.sendMessage(chatId, messageOptions, { quoted: fkknt })
+            .then(sentMessage => {
+                console.log('Message sent successfully:', sentMessage);
+            });
+    } catch (e) {
+        console.error('Error sending messages:', e);
+    }
+};
+
+
     m.loading = async () => {
         const chatId = m.chat;
 
@@ -835,7 +927,26 @@ async function Serialize(keila, m, store) {
 			return keila.sendMessage(chatId, { text: text, mentions: [...text.matchAll(/@(\d{0,16})/g)].map(v => v[1] + '@s.whatsapp.net'), ...options }, { quoted })
 		}
 	}
-
+	
+	m.send = async (chatId, text, options = {}) => {
+        const caption = options.caption || '';
+        const quoted = options?.quoted ? options.quoted : m;
+        try {
+            if (/^https?:\/\//.test(text)) {
+                const data = await axios.get(text, { responseType: 'arraybuffer' });
+                const mime = data.headers['content-type'] || (await FileType.fromBuffer(data.data)).mime;
+                if (/gif|image|video|audio|pdf/i.test(mime)) {
+                    return keila.sendFileUrl(chatId, text, caption, quoted, options);
+                } else {
+                    return keila.sendMessage(chatId, { text: text, mentions: [...text.matchAll(/@(\d{0,16})/g)].map(v => v[1] + '@s.whatsapp.net'), ...options }, { quoted });
+                }
+            } else {
+                return keila.sendMessage(chatId, { text: text, mentions: [...text.matchAll(/@(\d{0,16})/g)].map(v => v[1] + '@s.whatsapp.net'), ...options }, { quoted });
+            }
+        } catch (e) {
+            return keila.sendMessage(chatId, { text: text, mentions: [...text.matchAll(/@(\d{0,16})/g)].map(v => v[1] + '@s.whatsapp.net'), ...options }, { quoted });
+        }
+    }
 	return m
 }
 

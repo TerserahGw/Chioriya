@@ -56,7 +56,7 @@
       <td style="border: 1px solid #000; padding: 8px; text-align: center;">✅</td>
     </tr>
     <tr>
-      <td style="border: 1px solid #000; padding: 8px; text-align: center;">Api Service</td>
+      <td style="border: 1px solid #000; padding: 8px; text-align: center;">Multi Language</td>
       <td style="border: 1px solid #000; padding: 8px; text-align: center;">❓</td>
     </tr>
     <tr>
